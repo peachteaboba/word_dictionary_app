@@ -44,7 +44,7 @@
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="search" translatesAutoresizingMaskIntoConstraints="NO" id="FWD-82-iu1">
-                                        <rect key="frame" x="25" y="35" width="25" height="24"/>
+                                        <rect key="frame" x="25" y="37" width="25" height="24"/>
                                         <constraints>
                                             <constraint firstAttribute="width" secondItem="FWD-82-iu1" secondAttribute="height" multiplier="1:1" constant="1" id="7Bc-aN-mKX"/>
                                             <constraint firstAttribute="width" constant="25" id="Bn0-el-u9y"/>
@@ -82,7 +82,7 @@
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <constraints>
-                                    <constraint firstItem="FWD-82-iu1" firstAttribute="top" secondItem="c2L-3W-DR3" secondAttribute="top" constant="35" id="2oD-uy-pRK"/>
+                                    <constraint firstItem="FWD-82-iu1" firstAttribute="top" secondItem="c2L-3W-DR3" secondAttribute="top" constant="37" id="2oD-uy-pRK"/>
                                     <constraint firstItem="KHf-xE-ZOl" firstAttribute="leading" secondItem="c2L-3W-DR3" secondAttribute="leading" id="43b-0p-zhD"/>
                                     <constraint firstItem="C7c-uA-9Ii" firstAttribute="leading" secondItem="6ca-R3-MdD" secondAttribute="trailing" constant="6" id="5gi-uk-x0F"/>
                                     <constraint firstItem="FWD-82-iu1" firstAttribute="leading" secondItem="c2L-3W-DR3" secondAttribute="leading" constant="25" id="6pe-Ko-IfJ"/>

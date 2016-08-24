@@ -9,6 +9,7 @@
 import UIKit
 import Alamofire
 import AVFoundation
+import AVFoundation.AVAudioSession
 
 class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
@@ -263,6 +264,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
    
         // Hide sound image on first load
         self.soundImage.hidden = true
+        
+        // Set sound playing to 'Ambient' so it won't inturrupt other audio
+        try! AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryAmbient)
         
         
         // Initialize prompt settings
