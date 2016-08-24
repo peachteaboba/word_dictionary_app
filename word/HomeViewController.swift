@@ -8,6 +8,7 @@
 
 import UIKit
 import Alamofire
+import AVFoundation
 
 class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
@@ -21,7 +22,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     var currentRow = 0 // used for scrolling to a specific row
     var verticalOffset = 0 // used for bringing down search field using scroll action
     
-    
+    var player = AVPlayer()
     
     
     // variable to save the last position visited, default to zero
@@ -40,7 +41,42 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     @IBOutlet weak var linkView: UIView!
     @IBOutlet weak var linkViewBottomConstraint: NSLayoutConstraint!
     
+    @IBOutlet weak var soundImage: UIImageView!
+    @IBOutlet weak var soundIconTapZone: UIView!
     
+    
+    
+    // MARK: - Handle Stuff Pressed Functions ---------------------------------------------------
+    
+    func handlePlaySound() {
+        // Check if there is a sound url in the sounds array
+        if self.uDSounds.count > 0 {
+           
+            // Convert normal string to NSURL String
+            let url : NSURL = NSURL(string: self.uDSounds[0])!
+
+            // Create the player item that will play the sound
+            let playerItem = AVPlayerItem(URL: url)
+            
+            // Right when the sound starts playing, change the color of the sound icon
+            self.soundImage.image = UIImage(named: "soundPlaying")
+            
+            
+            // Set an listener for when the sounds is done playing
+            NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: playerItem)
+            
+            // Play the sound
+            self.player = AVPlayer(playerItem:playerItem)
+            self.player.volume = 1.0
+            self.player.play()
+        }
+    }
+    
+    func playerDidFinishPlaying(note: NSNotification) {
+        
+        // When the sound is done playing, change the sound icon back to original
+        self.soundImage.image = UIImage(named: "sound")
+    }
     
     
     
@@ -65,6 +101,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.uDLists = [uDList]()
         self.promptLabel.hidden = false
         self.promptLabel.text = "Searching..."
+        
+        // Hide sound image on new api call
+        self.soundImage.hidden = true
         
         // Remove spaces from input and create the URL string.
         let trimmedString = word.stringByReplacingOccurrencesOfString(" ", withString: "")
@@ -144,6 +183,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     if let sounds = res["sounds"] as? NSArray {
                         for val in sounds {
                             self.uDSounds.append(val as! String)
+                            
+                            // If there are sounds, then show the sound image.
+                            self.soundImage.hidden = false
                         }
                     } else {
                         print("no sounds")
@@ -218,6 +260,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         super.viewDidLoad()
         self.view.backgroundColor = UIColorFromRGB(0x00c860)
         self.topHeaderLabel.textColor = UIColorFromRGB(0x333333)
+   
+        // Hide sound image on first load
+        self.soundImage.hidden = true
+        
         
         // Initialize prompt settings
         self.promptLabel.textColor = UIColorFromRGB(0x0c743e)
@@ -240,12 +286,26 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         let searchIconTap = UITapGestureRecognizer(target: self, action: #selector(self.handleSearchIconTap))
         self.searchIconTapZone.userInteractionEnabled = true
         self.searchIconTapZone.addGestureRecognizer(searchIconTap)
+        
+        
+        // Add guesture action to Top Header Label
+        let playSound = UITapGestureRecognizer(target: self, action: #selector(self.handlePlaySound))
+        self.topHeaderLabel.userInteractionEnabled = true
+        self.topHeaderLabel.addGestureRecognizer(playSound)
+        
+        // Add guesture action to Sound Image
+//        self.soundImage.userInteractionEnabled = true
+//        self.soundImage.addGestureRecognizer(topHeaderTap)
+        
     }
     
     override func viewWillAppear(animated: Bool) {
         super.viewWillAppear(animated)
         
         self.linkViewBottomConstraint.constant = -400
+        
+        
+        
  
     }
     
