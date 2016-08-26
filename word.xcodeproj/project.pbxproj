@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		935FFEAD1D6FE2160026DC42 /* CustomWikiCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935FFEAC1D6FE2160026DC42 /* CustomWikiCell.swift */; };
 		9367A2CA1D6A61E300E4A765 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9367A2C91D6A61E300E4A765 /* AppDelegate.swift */; };
 		9367A2CC1D6A61E300E4A765 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9367A2CB1D6A61E300E4A765 /* HomeViewController.swift */; };
 		9367A2CF1D6A61E300E4A765 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9367A2CD1D6A61E300E4A765 /* Main.storyboard */; };
@@ -102,6 +103,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		935FFEAC1D6FE2160026DC42 /* CustomWikiCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomWikiCell.swift; sourceTree = "<group>"; };
 		9367A2C61D6A61E300E4A765 /* word.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = word.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9367A2C91D6A61E300E4A765 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9367A2CB1D6A61E300E4A765 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
@@ -129,6 +131,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		935FFEA21D6FBD7D0026DC42 /* Addons */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Addons;
+			sourceTree = "<group>";
+		};
 		9367A2BD1D6A61E300E4A765 = {
 			isa = PBXGroup;
 			children = (
@@ -157,9 +166,11 @@
 				9367A3011D6A874F00E4A765 /* CustomDefinitionCell.swift */,
 				937BF2E41D6B997700003964 /* CustomTagCell.swift */,
 				937BF2E21D6B982100003964 /* CustomUrbanCell.swift */,
+				935FFEAC1D6FE2160026DC42 /* CustomWikiCell.swift */,
 				9367A2D01D6A61E300E4A765 /* Assets.xcassets */,
 				9367A2D21D6A61E300E4A765 /* LaunchScreen.storyboard */,
 				9367A2D51D6A61E300E4A765 /* Info.plist */,
+				935FFEA21D6FBD7D0026DC42 /* Addons */,
 			);
 			path = word;
 			sourceTree = "<group>";
@@ -213,7 +224,7 @@
 				TargetAttributes = {
 					9367A2C51D6A61E300E4A765 = {
 						CreatedOnToolsVersion = 7.3.1;
-						DevelopmentTeam = 32H24EKY3R;
+						DevelopmentTeam = UJBSBJQ26X;
 					};
 				};
 			};
@@ -317,6 +328,7 @@
 				937BF2DA1D6B91FF00003964 /* uDList.swift in Sources */,
 				9367A3021D6A874F00E4A765 /* CustomDefinitionCell.swift in Sources */,
 				9367A3001D6A7B1800E4A765 /* Definition.swift in Sources */,
+				935FFEAD1D6FE2160026DC42 /* CustomWikiCell.swift in Sources */,
 				9367A2CA1D6A61E300E4A765 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -445,10 +457,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
 				INFOPLIST_FILE = word/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.andyfeng.word;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getwordapp.word;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -457,10 +470,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
 				INFOPLIST_FILE = word/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.andyfeng.word;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getwordapp.word;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

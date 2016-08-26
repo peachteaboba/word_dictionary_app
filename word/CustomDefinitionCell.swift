@@ -16,4 +16,17 @@ class CustomDefinitionCell: UITableViewCell {
 
     @IBOutlet weak var tableCellView: UIView!
     
+    
+    
+    
+    
+    
+    // Static labels
+    
+    @IBOutlet weak var staticDefinitionLabel: UILabel!
+    @IBOutlet weak var staticExampleLabel: UILabel!
+    
+    
+    
+    
 }

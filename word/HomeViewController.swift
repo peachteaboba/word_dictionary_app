@@ -11,28 +11,48 @@ import Alamofire
 import AVFoundation
 import AVFoundation.AVAudioSession
 
+
+
 class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
+    
+    // MARK: - Global Variables -------------------------------------------------------------------
     var senderText = String()
+    var senderTextDirty = String()
     var definitions = [Definition]()
     var uDTags = [String]()
     var uDSounds = [String]()
     var uDLists = [uDList]()
+    var wikiExtract = ""
     
     
     var currentRow = 0 // used for scrolling to a specific row
     var verticalOffset = 0 // used for bringing down search field using scroll action
+    var isFirstLoad = 1 // used to disable drag down gesture on first page after app loads
     
     var player = AVPlayer()
     
     
     // variable to save the last position visited, default to zero
     private var lastContentOffset: CGFloat = 0
+    
+    
+   
+    
+    
+    
+    
+    
+    // MARK: - Outlets -----------------------------------------------------------------------------
 
+    @IBOutlet weak var topHeaderLeftConstraint: NSLayoutConstraint!
     
     @IBOutlet weak var definitionTableView: UITableView!
     @IBOutlet weak var searchIconTapZone: UIView!
     @IBOutlet weak var searchIcon: UIImageView!
+    @IBOutlet weak var searchIconDark: UIImageView!
+    
+    
     @IBOutlet weak var searchTextField: UITextField!
     @IBOutlet weak var topHeaderLabel: UILabel!
     @IBOutlet weak var topViewHeightConstraint: NSLayoutConstraint!
@@ -43,33 +63,61 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     @IBOutlet weak var linkViewBottomConstraint: NSLayoutConstraint!
     
     @IBOutlet weak var soundImage: UIImageView!
-    @IBOutlet weak var soundIconTapZone: UIView!
+   
+    @IBOutlet weak var xButton: UIImageView!
     
-    
+ 
     
     // MARK: - Handle Stuff Pressed Functions ---------------------------------------------------
+    
+    func handleClearText() {
+        
+        self.searchTextField.text = ""
+        self.xButton.hidden = true
+        
+    }
+    
+    // Function that executes every time the text field is altered
+    func textFieldDidChange(textField: UITextField) {
+        // Do code here when the text field is altered
+        self.xButton.hidden = false
+    }
+    
     
     func handlePlaySound() {
         // Check if there is a sound url in the sounds array
         if self.uDSounds.count > 0 {
            
-            // Convert normal string to NSURL String
-            let url : NSURL = NSURL(string: self.uDSounds[0])!
-
-            // Create the player item that will play the sound
-            let playerItem = AVPlayerItem(URL: url)
+            // Play the sound if the sound image is gray
+            if self.soundImage.image == UIImage(named: "sound") {
+                
+                // Right when the sound starts playing, change the color of the sound icon
+                self.soundImage.image = UIImage(named: "soundPlaying")
+                
+                // Convert normal string to NSURL String
+                let url : NSURL = NSURL(string: self.uDSounds[0])!
+                
+                // Create the player item that will play the sound
+                let playerItem = AVPlayerItem(URL: url)
+                
+                // Set an listener for when the sounds is done playing
+                NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: playerItem)
             
-            // Right when the sound starts playing, change the color of the sound icon
-            self.soundImage.image = UIImage(named: "soundPlaying")
-            
-            
-            // Set an listener for when the sounds is done playing
-            NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: playerItem)
-            
-            // Play the sound
-            self.player = AVPlayer(playerItem:playerItem)
-            self.player.volume = 1.0
-            self.player.play()
+                // Play the sound
+                self.player = AVPlayer(playerItem:playerItem)
+                self.player.volume = 1.0
+                self.player.play()
+                
+            } else {
+                // Change the sound icon
+                self.soundImage.image = UIImage(named: "sound")
+                
+                // Stop playing the sound
+                self.player.pause()
+                
+                // Initiate new player so the sound will play from the beginning next time
+                self.player = AVPlayer()
+            }
         }
     }
     
@@ -83,15 +131,33 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     @IBAction func handleSearchButtonPressed(sender: UITextField) {
     
+        if self.isFirstLoad == 1 {
+            self.isFirstLoad = 0
+        }
+        
         self.dismissKeyboard()
         animateSearchBox()
-        self.topHeaderLabel.text = sender.text!
         
-        self.senderText = sender.text!
+        // Set the top title text
+        self.setTopTitleText(sender.text!)
+        
+        self.senderTextDirty = sender.text!
+        
         self.verticalOffset = 0
         
         callAPI(sender.text!)
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // MARK: - API Stuffs ---------------------------------------------------------------------------------------
+    
     
     func callAPI(word: String) {
         
@@ -103,11 +169,29 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.promptLabel.hidden = false
         self.promptLabel.text = "Searching..."
         
+        // Reset wikiExtract variable
+        self.wikiExtract = ""
+        
         // Hide sound image on new api call
         self.soundImage.hidden = true
         
         // Remove spaces from input and create the URL string.
-        let trimmedString = word.stringByReplacingOccurrencesOfString(" ", withString: "")
+        var trimmedString = word.stringByReplacingOccurrencesOfString(" ", withString: "")
+        
+        // Give the user a search term if they search for an empty string
+        if trimmedString == "" {
+            trimmedString = "nothing"
+            self.setTopTitleText(trimmedString)
+        }
+        
+        
+        // Change the string if it's really really long
+        if trimmedString.characters.count > 50 {
+            trimmedString = "long"
+            self.setTopTitleText(trimmedString)
+        }
+        
+        
         let cleanString = removeSpecialCharsFromString(trimmedString)
         self.senderText = cleanString
         
@@ -143,27 +227,83 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     
                     // Update UI
                     self.definitionTableView.reloadData()
-                    self.callUrbanDictionaryAPI(cleanString)
+                    self.wikipediaAPI()
      
                 } else {
-                    self.promptLabel.text = "Space: the final frontier. These are the voyages of the starship Enterprise. Its five-year mission: to explore strange new worlds, to seek out new life and new civilizations, to boldly go where no man has gone before. (PS: Nice try Mr. Robot.. How bout we try a real word this time)"
+                    self.promptLabel.text = "The status of your request is a 404.. Please try again! D:"
+                    self.searchTextField.text = self.senderText
                     self.definitionTableView.reloadData()
                 }
                 
                 
         } // End OWLBOT API ------------------------------------------------------------------------------
-        
-        
-        
-
-        
-        
+  
     }
     
+    func wikipediaAPI() { // WORDNIK API ------------------------------------------------------------------------------
+        
+        
+        // Clean the string
+        let cleanString = self.removeSpecialCharsFromString(self.senderTextDirty)
+        
+        // Replace empty spaces with %20
+        let modifiedString = cleanString.stringByReplacingOccurrencesOfString(" ", withString: "%20")
+   
+        let wikipediaURL = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&exintro=&titles=\(modifiedString)"
+        
+        Alamofire.request(.GET, wikipediaURL).responseJSON { response in
+            
+            if let responseArray = response.result.value as? NSDictionary {
+                
+                if let data = responseArray["query"] {
+                    if let pages = data["pages"] {
+                        if let extract = pages!.allValues[0]["extract"] as? String {
+                            
+                            // Clean HTML string
+                            var extractStr = extract.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
+                            extractStr = self.removeSpecialCharsFromString(extractStr)
+                            
+                            // Cache the extract in the global variable 
+                            self.wikiExtract = extractStr
+                            
+                            // Update UI
+                            self.definitionTableView.reloadData()
+                            self.callUrbanDictionaryAPI()
+                            
+                        } else {
+                            // Update UI
+                            self.definitionTableView.reloadData()
+                            self.callUrbanDictionaryAPI()
+                        }
+                    } else {
+                        // Update UI
+                        self.definitionTableView.reloadData()
+                        self.callUrbanDictionaryAPI()
+                    }
+                } else {
+                    // Update UI
+                    self.definitionTableView.reloadData()
+                    self.callUrbanDictionaryAPI()
+                }
+            } else {
+                print("no mas")
+                // Update UI
+                self.definitionTableView.reloadData()
+                self.callUrbanDictionaryAPI()
+            }
+            
+            
+        }
+    } // END WIKIPEDIA API ------------------------------------------------------------------------------
     
     
-    func callUrbanDictionaryAPI(cleanString: String) {
+    
+
+    
+    func callUrbanDictionaryAPI() {
         // URBAN DICTIONARY API ------------------------------------------------------------------------------
+        
+        let cleanString = self.senderText
         let urbanDictionaryURL = "http://api.urbandictionary.com/v0/define?term=\(cleanString)"
         
         Alamofire.request(.GET, urbanDictionaryURL)
@@ -185,8 +325,13 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                         for val in sounds {
                             self.uDSounds.append(val as! String)
                             
+                            
                             // If there are sounds, then show the sound image.
                             self.soundImage.hidden = false
+                            
+                            self.refreshTopTitleConstraint()
+
+                            
                         }
                     } else {
                         print("no sounds")
@@ -244,13 +389,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
    
                 
         } // End URBAN DICTIONARY API ------------------------------------------------------------------------------
-        
-        
     }
-    
-    
-    
-    
     
     
     
@@ -261,9 +400,21 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         super.viewDidLoad()
         self.view.backgroundColor = UIColorFromRGB(0x00c860)
         self.topHeaderLabel.textColor = UIColorFromRGB(0x333333)
+        
+        // Top header left constraint
+        self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2)
+        
+        
+        
+        
+        // Table view styles
+        self.definitionTableView.contentInset = UIEdgeInsetsMake(11, 0, 200, 0);
    
-        // Hide sound image on first load
+        // Hide sound image amoung other things on first load
         self.soundImage.hidden = true
+        self.xButton.hidden = true
+        self.searchIconDark.alpha = 1
+        self.searchIcon.alpha = 0
         
         // Set sound playing to 'Ambient' so it won't inturrupt other audio
         try! AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryAmbient)
@@ -271,7 +422,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         // Initialize prompt settings
         self.promptLabel.textColor = UIColorFromRGB(0x0c743e)
-        self.promptLabel.text = "Pick a word, Any word."
+        self.promptLabel.text = "Pick a word. Any word."
         self.promptTopConstraint.constant = 25
         
         // Search field styles
@@ -297,9 +448,15 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.topHeaderLabel.userInteractionEnabled = true
         self.topHeaderLabel.addGestureRecognizer(playSound)
         
-        // Add guesture action to Sound Image
-//        self.soundImage.userInteractionEnabled = true
-//        self.soundImage.addGestureRecognizer(topHeaderTap)
+        // Add guesture action to X Button
+        let clearText = UITapGestureRecognizer(target: self, action: #selector(self.handleClearText))
+        self.xButton.userInteractionEnabled = true
+        self.xButton.addGestureRecognizer(clearText)
+
+        // Add gesture to text field to sense text change
+        self.searchTextField.addTarget(self, action: #selector(self.textFieldDidChange(_:)), forControlEvents: UIControlEvents.EditingChanged)
+
+        
         
     }
     
@@ -307,7 +464,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         super.viewWillAppear(animated)
         
         self.linkViewBottomConstraint.constant = -400
-        
+   
         
         
  
@@ -320,16 +477,53 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
 
     
-    
+ 
     
     
     
     
     // MARK: - Helper Functions ------------------------------------------------------------
     
+    func setTopTitleText(word: String) {
+        var wordToDisplay = word
+        
+        if word.characters.count > 25 {
+            while wordToDisplay.characters.count > 15 {
+                wordToDisplay.removeAtIndex(wordToDisplay.endIndex.predecessor())
+            }
+            wordToDisplay += ".."
+        }
+        
+        self.topHeaderLabel.text = wordToDisplay
+        self.senderText = word
+        
+        // Update the title label left constraint
+        self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2)
+        
+    }
+    
+    
+    func refreshTopTitleConstraint() {
+        // Update the title label left constraint
+        self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2) - 8
+        
+        // Code to start animation
+        self.view.setNeedsLayout()
+        UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
+            self.view.layoutIfNeeded()
+        }) { (finished) in
+            if finished {
+                // Code to execute after animation...
+            }
+        }
+
+    }
+    
+    
+    
     func removeSpecialCharsFromString(text: String) -> String {
         let okayChars : Set<Character> =
-            Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ1234567890".characters)
+            Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ1234567890 ".characters)
         return String(text.characters.filter {okayChars.contains($0) })
     }
     
@@ -337,7 +531,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func updatePrompt() {
         
-        if self.definitions.count + self.uDLists.count == 0 {
+        if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" {
             self.promptLabel.text = "Perhaps one day '\(self.senderText)' will be a searchable word. Today is not that day.. Try another!"
         } else {
             self.promptLabel.hidden = true
@@ -391,6 +585,11 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         // Set transitions
         if self.topViewHeightConstraint.constant == 150 {
             self.searchTextField.alpha = 0
+          
+            self.xButton.hidden = true
+            
+            self.transitionToSearchIcon()
+            
             self.topViewHeightConstraint.constant = 82
             dismissKeyboard()
             
@@ -398,6 +597,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         } else {
             self.searchTextField.alpha = 1
             self.topViewHeightConstraint.constant = 150
+            
+            self.transitionToSearchIcon()
             
             self.searchTextField.text = ""
             self.searchTextField.becomeFirstResponder()
@@ -414,8 +615,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         }
     }
     
-    
-    
+    // Makes the search icon a little darker when search bar is expanded
+    func transitionToSearchIcon() {
+        if self.searchIconDark.alpha == 0 {
+            self.searchIconDark.alpha = 1
+            self.searchIcon.alpha = 0
+        } else {
+            self.searchIconDark.alpha = 0
+            self.searchIcon.alpha = 1
+        }
+    }
     
     
     
@@ -426,7 +635,11 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
    
     // How many cells are we going to need?
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.uDLists.count + self.definitions.count
+        if self.wikiExtract != "" {
+            return self.uDLists.count + self.definitions.count + 1
+        } else {
+            return self.uDLists.count + self.definitions.count
+        }
     }
     
     // How should I create each cell?
@@ -439,12 +652,29 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
             let cell = tableView.dequeueReusableCellWithIdentifier("myCell") as! CustomDefinitionCell
             
-            // Set table data
-            cell.typeLabel.text = self.definitions[indexPath.row].type
-            cell.definitionLabel.text = self.definitions[indexPath.row].definition
-            cell.exampleLabel.text = self.definitions[indexPath.row].example
+            // Clean HTML string
+            var definitionStr = self.definitions[indexPath.row].definition.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
+            definitionStr = self.removeSpecialCharsFromString(definitionStr)
+            
+            var exampleStr = self.definitions[indexPath.row].example.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
+            exampleStr = self.removeSpecialCharsFromString(exampleStr)
             
 
+            // Set table data
+            cell.typeLabel.text = self.definitions[indexPath.row].type
+            cell.definitionLabel.text = definitionStr
+            cell.exampleLabel.text = exampleStr
+            
+            
+            // Hide sections that have no data
+            
+            cell.staticExampleLabel.hidden = false // Revert to default settings
+
+            if self.definitions[indexPath.row].example == "" {
+                cell.staticExampleLabel.hidden = true
+            }
+            
+            
             // Set custom cell styles
             cell.tableCellView.layer.cornerRadius = 20
             cell.exampleLabel.textColor = UIColorFromRGB(0x00c860)
@@ -467,23 +697,46 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             self.definitionTableView.estimatedRowHeight = 80
             self.definitionTableView.rowHeight = UITableViewAutomaticDimension
         
-            
             return cell
 
-        }  else {
+        } else if self.wikiExtract != "" && indexPath.row == self.definitions.count {
+            // Wikipedia Extract Prototype Cells
+            
+            // Dequeue the cell from our storyboard
+            let cell = tableView.dequeueReusableCellWithIdentifier("wikiCell") as! CustomWikiCell
+            
+            // Set custom cell data
+            cell.extractLabel.text = self.wikiExtract
+            
+            // Set custom cell styles
+            cell.wikiCellView.layer.cornerRadius = 20
+            
+            // Set dynamic cell height
+            self.definitionTableView.estimatedRowHeight = 80
+            self.definitionTableView.rowHeight = UITableViewAutomaticDimension
+            
+            return cell
+            
+        } else {
             // Urban Dictionary Prototype Cells
-            // Calculate the corresponding index/row for uDLists
-            let row = indexPath.row - self.definitions.count
 
+            // Calculate the corresponding index/row for uDLists
+            var index = 0
+            if self.wikiExtract == "" {
+                index = indexPath.row - self.definitions.count
+            } else {
+                index = indexPath.row - self.definitions.count - 1
+            }
+            
             // Dequeue the cell from our storyboard
             let cell = tableView.dequeueReusableCellWithIdentifier("urbanCell") as! CustomUrbanCell
             
             // Set custom cell data
-            cell.definitionLabel.text = self.uDLists[row].definition
-            cell.exampleLabel.text = self.uDLists[row].example
-            cell.userLabel.text = self.uDLists[row].author
+            cell.definitionLabel.text = self.uDLists[index].definition
+            cell.exampleLabel.text = self.uDLists[index].example
+            cell.userLabel.text = self.uDLists[index].author
             
-            let score = self.uDLists[row].thumbs_up - self.uDLists[row].thumbs_down
+            let score = self.uDLists[index].thumbs_up - self.uDLists[index].thumbs_down
             
             if score >= 0 {
                 cell.scoreLabel.text = "+\(score)"
@@ -492,7 +745,6 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 cell.scoreLabel.text = "-\(score)"
                 cell.scoreLabel.textColor = UIColorFromRGB(0xFF3B65)
             }
-            
             
             // Set custom cell styles
             cell.urbanCellView.layer.cornerRadius = 20
@@ -513,7 +765,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // MARK: - Detect SCROLL function -------------------------------------------------------------------------
     
     func scrollViewDidScroll(scrollView: UIScrollView) {
-        if (self.lastContentOffset > scrollView.contentOffset.y) {
+        if (self.lastContentOffset > scrollView.contentOffset.y && self.isFirstLoad != 1) {
  
             // If the view is scrolled all the way up and the user is still scrolling up. Bring down the search field.
             if scrollView.contentOffset.y < -100 && self.verticalOffset == 0 {
@@ -525,6 +777,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 self.topViewHeightConstraint.constant = 150
                 self.searchTextField.alpha = 1
                 self.searchTextField.text = ""
+                self.transitionToSearchIcon()
                 
                 // Code to start animation
                 self.view.setNeedsLayout()
@@ -550,6 +803,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     self.topViewHeightConstraint.constant = 82
                     dismissKeyboard()
                     self.verticalOffset = 0
+                    self.transitionToSearchIcon()
 
                     // Code to start animation
                     self.view.setNeedsLayout()
