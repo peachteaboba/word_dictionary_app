@@ -18,6 +18,7 @@ class uDList {
     var example: String
     var thumbs_up: Int
     var thumbs_down: Int
+    var score: Int
     
 
     
@@ -30,6 +31,7 @@ class uDList {
         self.example = example
         self.thumbs_up = thumbs_up
         self.thumbs_down = thumbs_down
+        self.score = thumbs_up - thumbs_down
     }
     
 }

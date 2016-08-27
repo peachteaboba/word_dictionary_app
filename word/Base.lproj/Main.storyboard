@@ -452,6 +452,7 @@
                         <outlet property="soundImage" destination="C7c-uA-9Ii" id="TDi-Ei-t9D"/>
                         <outlet property="topHeaderLabel" destination="6ca-R3-MdD" id="VON-tC-lvL"/>
                         <outlet property="topHeaderLeftConstraint" destination="y6m-h7-oc7" id="LA7-7a-P4f"/>
+                        <outlet property="topRightTapZone" destination="tBa-Xj-JCA" id="uko-qi-VRL"/>
                         <outlet property="topViewHeightConstraint" destination="lbb-X0-fEI" id="3Wu-Yf-g65"/>
                         <outlet property="xButton" destination="hcI-CM-N0p" id="nDb-Jx-TzE"/>
                     </connections>
