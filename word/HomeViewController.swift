@@ -39,7 +39,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // variable to save the last position visited, default to zero
     private var lastContentOffset: CGFloat = 0
     
-    
+    // Cache the baseline top title left constraint for each new word
+    var topTitleLeftConstraint: CGFloat = 0
    
     
     
@@ -69,7 +70,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     @IBOutlet weak var soundImage: UIImageView!
    
     @IBOutlet weak var xButton: UIImageView!
+    @IBOutlet weak var randomWordIndicator: UILabel!
     
+    @IBOutlet weak var shakeForRandView: UIView!
+    @IBOutlet weak var shakeForRandLabel: UILabel!
  
     
     // MARK: - Handle Stuff Pressed Functions ---------------------------------------------------
@@ -163,6 +167,11 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func callNewHotness(cleanString: String) {
 
+        // Hide the rand indicator in case it's not hidden
+        if self.randomWordIndicator.hidden == false {
+            self.randomWordIndicator.hidden = true
+        }
+        
         let headers = [
             "X-Mashape-Key": "MHOVySweXOmsh65XEw8g4ZIbCooup10TJsMjsnK8rElAjjA3JJ"
         ]
@@ -181,12 +190,18 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         }
        
         Alamofire.request(.GET, wordsURL, headers: headers).responseJSON { response in   // Words API ---------------------------------------
-
+            
             if let responseArray = response.result.value as? NSDictionary {
 
                 if self.random == 1 {
                     if let randomWord = responseArray["word"] as? String {
+                        
+                        // Show the random word as the title
                         self.setTopTitleText(randomWord)
+                        
+                        // Show random word indicator
+                        self.randomWordIndicator.hidden = false
+                        
                         self.topHeaderLabel.textColor = self.UIColorFromRGB(0x333333)
                         let wikiRand = self.removeSpecialCharsFromString(randomWord)
                         self.senderTextDirty = wikiRand
@@ -247,7 +262,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 if self.random == 1 {
                     self.random = 0
                     print("error ---> no random found!!!")
-                    
+                    self.topHeaderLabel.text = "404"
+                    self.topHeaderLabel.textColor = self.UIColorFromRGB(0x333333)
                     self.senderTextDirty = "404"
                     self.senderText = "404"
                 }
@@ -423,16 +439,40 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
     
     
-    override func canBecomeFirstResponder() -> Bool {
-        return true
+
+    
+    
+    
+    
+    // GHIPHY API test -----------
+    func giphyAPI() {
+        
+        
+        
+        
     }
     
-    override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent?) {
-        if(event!.subtype == UIEventSubtype.MotionShake) {
-//            print("You shook me, now what")
-            handleRandTap()
-        }
-    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     // MARK: - View Did Load ----------------------------------------------------------------
     override func viewDidLoad() {
@@ -462,6 +502,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.xButton.hidden = true
         self.searchIconDark.alpha = 1
         self.searchIcon.alpha = 0
+        self.randomWordIndicator.hidden = true
+        
+        
         
         // Set sound playing to 'Ambient' so it won't inturrupt other audio
         try! AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryAmbient)
@@ -469,8 +512,15 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         // Initialize prompt settings
         self.promptLabel.textColor = UIColorFromRGB(0x0c743e)
-        self.promptLabel.text = "Pick a word. Any word. (shake for random word)"
+        self.promptLabel.text = "Pick a word. Any word."
         self.promptTopConstraint.constant = 25
+        
+        // Shake for rand styles
+        self.shakeForRandView.backgroundColor = UIColorFromRGB(0x0D7A42) // dark green
+        self.shakeForRandView.layer.cornerRadius = self.shakeForRandView.frame.height / 2
+        self.shakeForRandLabel.textColor = UIColorFromRGB(0x00c860)
+        
+        
         
         // Search field styles
         self.searchTextField.backgroundColor = UIColorFromRGB(0xf2f4f9)
@@ -511,23 +561,30 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         super.viewWillAppear(animated)
         
         self.linkViewBottomConstraint.constant = -400
-   
-        
-        
- 
+
     }
     
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+        print("My god.. The memory level on this app is over 9000!!! Quick, do something!")
     }
 
+    // Allows shake gesture to be recognized
+    override func canBecomeFirstResponder() -> Bool {
+        return true
+    }
     
+    // Function that executes after shake is detected
+    override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent?) {
+        if(event!.subtype == UIEventSubtype.MotionShake) {
+            //            print("You shook me, now what")
+            handleRandTap()
+        }
+    }
  
-    
-    
-    
+
     
     // MARK: - Helper Functions ------------------------------------------------------------
     func cleanInputString(dirty: String) {
@@ -552,6 +609,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.uDLists = [uDList]()
         self.promptLabel.hidden = false
         self.promptLabel.text = "Searching..."
+        self.shakeForRandView.hidden = true
         
         // Reset wikiExtract variable
         self.wikiExtract = ""
@@ -601,15 +659,19 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.topHeaderLabel.text = wordToDisplay
         self.senderText = word
         
+        // Cache the title lebel left constraint for future use
+        self.topTitleLeftConstraint = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2) + 2
+        
         // Update the title label left constraint
-        self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2)
+        self.topHeaderLeftConstraint.constant = self.topTitleLeftConstraint
+        
         
     }
     
     
     func refreshTopTitleConstraint() {
         // Update the title label left constraint
-        self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2) - 8
+        self.topHeaderLeftConstraint.constant = self.topTitleLeftConstraint - 8
         
         // Code to start animation
         self.view.setNeedsLayout()
@@ -641,6 +703,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func updatePrompt() {
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" {
             self.promptLabel.text = "Perhaps one day '\(self.senderText)' will be a searchable word. Today is not that day.. Try another!"
+            self.shakeForRandView.hidden = false
         } else {
             if self.prevRand == 1 {
                 // vibrate to alert the user some random content is found
