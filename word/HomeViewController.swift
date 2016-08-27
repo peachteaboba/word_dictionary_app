@@ -78,6 +78,19 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // MARK: - Handle Stuff Pressed Functions ---------------------------------------------------
     
+    
+    func handleSearchIconTap() {
+        animateSearchBox()
+        
+        // Stop the scroll movement by scrolling to the nearest row. This prevents the search bar to be hidden repeatedly during auto-scroll.
+        if currentRow > 1 {
+            self.definitionTableView.scrollToNearestSelectedRowAtScrollPosition(UITableViewScrollPosition.Middle, animated: true)
+        }
+        
+        self.verticalOffset = 0
+    }
+    
+    
     func handleRandTap() {
         self.random = 1
         self.prevRand = 1
@@ -154,6 +167,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         // Set the top title text
         self.setTopTitleText(sender.text!)
 
+        // Move to the top of the table every time a new search is initiated
+        self.definitionTableView.contentOffset = CGPointMake(0, 0 - self.definitionTableView.contentInset.top);
+        
+        // Cleans the input string and then calls the API
         self.cleanInputString(sender.text!)
     }
     
@@ -244,9 +261,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                             }
                         }
                         
-                        // Cache the data in a global array
-                        let dataToInsert = Definition(type: typeSave, definition: definitionSave, example: exampleSave)
-                        self.definitions.append(dataToInsert)
+                        // Cache the data in a global array if the definition is not blank
+                        if definitionSave != "" {
+                            let dataToInsert = Definition(type: typeSave, definition: definitionSave, example: exampleSave)
+                            self.definitions.append(dataToInsert)
+                        }
+                        
 
                     } // End for loop
                     
@@ -301,8 +321,13 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                             var extractStr = extract.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
                             extractStr = self.removeSpecialCharsFromStringWiki(extractStr)
                             
-                            // Cache the extract in the global variable 
-                            self.wikiExtract = extractStr
+                            
+                            
+                            // Cache the extract in the global variable. Check if it's useful info.
+                            if extractStr.characters.count > cleanString.characters.count + 15 {
+                                self.wikiExtract = extractStr
+                            }
+
                             
                             // Update UI
                             self.definitionTableView.reloadData()
@@ -412,8 +437,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                 thumbs_down = saveThumbs_down
                             }
                             
-                            let dataToInsert = uDList(defid: defid, word: word, author: author, permalink: permalink, definition: definition, example: example, thumbs_up: thumbs_up, thumbs_down: thumbs_down)
-                            self.uDLists.append(dataToInsert)
+                            // Cache the result if there is both a definition and example
+                            if definition != "" && example != "" {
+                                let dataToInsert = uDList(defid: defid, word: word, author: author, permalink: permalink, definition: definition, example: example, thumbs_up: thumbs_up, thumbs_down: thumbs_down)
+                                self.uDLists.append(dataToInsert)
+                            }
+
                         }
                         
                         // Sort according to score
@@ -737,24 +766,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
     
     
-    
-    
-    
-    
-    func handleSearchIconTap() {
-        animateSearchBox()
-        
-        // Stop the scroll movement by scrolling to the nearest row. This prevents the search bar to be hidden repeatedly during auto-scroll.
-        if currentRow > 1 {
-            self.definitionTableView.scrollToNearestSelectedRowAtScrollPosition(UITableViewScrollPosition.Middle, animated: true)
-        }
-        
-        self.verticalOffset = 0
-    }
-    
-    
-    
-    
+
     
     func animateSearchBox() {
         // Set transitions

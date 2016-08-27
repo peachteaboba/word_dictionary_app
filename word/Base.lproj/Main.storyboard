@@ -154,10 +154,10 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RtG-GP-AJc">
-                                <rect key="frame" x="201" y="205" width="198" height="35"/>
+                                <rect key="frame" x="201" y="205" width="198" height="33"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Shake for Random Word" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="KZj-Af-KKY">
-                                        <rect key="frame" x="20" y="8" width="158" height="19"/>
+                                        <rect key="frame" x="20" y="7" width="158" height="19"/>
                                         <fontDescription key="fontDescription" name="Futura-Medium" family="Futura" pointSize="14"/>
                                         <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                         <nil key="highlightedColor"/>
@@ -165,8 +165,8 @@
                                 </subviews>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <constraints>
-                                    <constraint firstItem="KZj-Af-KKY" firstAttribute="top" secondItem="RtG-GP-AJc" secondAttribute="top" constant="8" id="Asq-fa-DZx"/>
-                                    <constraint firstAttribute="bottom" secondItem="KZj-Af-KKY" secondAttribute="bottom" constant="8" id="REC-Pq-aEz"/>
+                                    <constraint firstItem="KZj-Af-KKY" firstAttribute="top" secondItem="RtG-GP-AJc" secondAttribute="top" constant="7" id="Asq-fa-DZx"/>
+                                    <constraint firstAttribute="bottom" secondItem="KZj-Af-KKY" secondAttribute="bottom" constant="7" id="REC-Pq-aEz"/>
                                     <constraint firstItem="KZj-Af-KKY" firstAttribute="leading" secondItem="RtG-GP-AJc" secondAttribute="leading" constant="20" id="aLl-OV-r7X"/>
                                     <constraint firstAttribute="trailing" secondItem="KZj-Af-KKY" secondAttribute="trailing" constant="20" id="fjG-Qm-QWX"/>
                                 </constraints>
