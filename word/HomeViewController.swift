@@ -331,6 +331,20 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
                             // Cache the extract in the global variable. Check if it's useful info.
                             if extractStr.characters.count > cleanString.characters.count + 15  && sampleString != "From other capitalisation:" {
+                                
+                                var capitalizedString = cleanString.localizedCapitalizedString
+                                capitalizedString = capitalizedString.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+                                
+                                // If the extract starts with "?? may refer to:" Remove that part
+                                sampleString = extractStr as NSString
+                                sampleString = sampleString.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 14))
+                                if sampleString == "\(capitalizedString) may refer to:" {
+                                    // Remove the front part
+                                    sampleString = extractStr as NSString
+                                    sampleString = sampleString.substringWithRange(NSRange(location: capitalizedString.characters.count + 14, length: extractStr.characters.count - (capitalizedString.characters.count + 14)))
+                                    extractStr = sampleString as String
+                                }
+                                
                                 self.wikiExtract = extractStr
                             }
 
