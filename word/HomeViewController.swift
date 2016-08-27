@@ -320,15 +320,20 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                             // Clean HTML string
                             var extractStr = extract.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
                             extractStr = self.removeSpecialCharsFromStringWiki(extractStr)
+
+                            // Don't display wiki extract if if gives you that From other cap nonsense..
+                            var sampleString = extractStr as NSString
                             
-                            
-                            
+                            // Sample the first 26 characters
+                            if extractStr.characters.count > 25 {
+                                sampleString = sampleString.substringWithRange(NSRange(location: 0, length: 26))
+                            }
+
                             // Cache the extract in the global variable. Check if it's useful info.
-                            if extractStr.characters.count > cleanString.characters.count + 15 {
+                            if extractStr.characters.count > cleanString.characters.count + 15  && sampleString != "From other capitalisation:" {
                                 self.wikiExtract = extractStr
                             }
 
-                            
                             // Update UI
                             self.definitionTableView.reloadData()
                             self.callUrbanDictionaryAPI()
