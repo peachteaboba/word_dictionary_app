@@ -25,6 +25,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     var uDSounds = [String]()
     var uDLists = [uDList]()
     var wikiExtract = ""
+    var synonymsArray = [String]()
     
     
     var currentRow = 0 // used for scrolling to a specific row
@@ -45,21 +46,41 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     
-    
-    
+    // Original top constraints
+    var originalSearchIconTopConstraint: CGFloat = 0
+    var originalTopHeaderLabelTopConstraint: CGFloat = 0
+    var originalSoundIconTopConstraint: CGFloat = 0
     // MARK: - Outlets -----------------------------------------------------------------------------
+    
+    
+    @IBOutlet weak var topInfoBarBackgroundView: UIView!
+    
 
-    @IBOutlet weak var topHeaderLeftConstraint: NSLayoutConstraint!
+    
     
     @IBOutlet weak var definitionTableView: UITableView!
     @IBOutlet weak var searchIconTapZone: UIView!
     @IBOutlet weak var searchIcon: UIImageView!
+    @IBOutlet weak var searchIconTopConstraint: NSLayoutConstraint!
     @IBOutlet weak var searchIconDark: UIImageView!
+    
+    
+    
     @IBOutlet weak var topRightTapZone: UIView! // <----------- top right tap zone (not assigned yet)
+    @IBOutlet weak var randomIcon: UIImageView!
+    
+    
     
     
     @IBOutlet weak var searchTextField: UITextField!
     @IBOutlet weak var topHeaderLabel: UILabel!
+    @IBOutlet weak var topHeaderLeftConstraint: NSLayoutConstraint!
+    @IBOutlet weak var topHeaderTopConstraint: NSLayoutConstraint!
+    
+    
+    
+    
+    
     @IBOutlet weak var topViewHeightConstraint: NSLayoutConstraint!
     @IBOutlet weak var promptLabel: UILabel!
     @IBOutlet weak var promptTopConstraint: NSLayoutConstraint!
@@ -68,6 +89,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     @IBOutlet weak var linkViewBottomConstraint: NSLayoutConstraint!
     
     @IBOutlet weak var soundImage: UIImageView!
+    @IBOutlet weak var soundImageTopConstraint: NSLayoutConstraint!
    
     @IBOutlet weak var xButton: UIImageView!
     @IBOutlet weak var randomWordIndicator: UILabel!
@@ -78,6 +100,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // MARK: - Handle Stuff Pressed Functions ---------------------------------------------------
     
+    func handleRandomIconTap() {
+        // User tapped the random button via the top right tap zone
+        handleRandTap()
+    }
+    
+    
     
     func handleSearchIconTap() {
         animateSearchBox()
@@ -86,8 +114,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         if currentRow > 1 {
             self.definitionTableView.scrollToNearestSelectedRowAtScrollPosition(UITableViewScrollPosition.Middle, animated: true)
         }
-        
-        self.verticalOffset = 0
+
     }
     
     
@@ -210,12 +237,13 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
             if let responseArray = response.result.value as? NSDictionary {
 
+                // If Random Word :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                 if self.random == 1 {
                     if let randomWord = responseArray["word"] as? String {
                         
                         // Show the random word as the title
                         self.setTopTitleText(randomWord)
-                        
+
                         // Show random word indicator
                         self.randomWordIndicator.hidden = false
                         
@@ -232,10 +260,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     if self.topHeaderLabel.textColor != self.UIColorFromRGB(0x333333) {
                         self.topHeaderLabel.textColor = self.UIColorFromRGB(0x333333)
                     }
-                }
-                
+                } // End If Random Word ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                 self.random = 0
-                
+
                 if let results = responseArray["results"] as? NSArray {
                     
                     for dic in results {
@@ -344,7 +371,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                 sampleString = extractStr as NSString
                                 sampleString = sampleString.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 14))
                                 
-                                // test word: Norristown
+                                // test word: Norristown <-- removes the "?? may mean:" from beginning of extract
                                 var sampleString2 = extractStr as NSString
                                 sampleString2 = sampleString2.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 10))
                                 
@@ -487,6 +514,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                         // Update UI
                         self.definitionTableView.reloadData()
                         self.updatePrompt()
+                        self.synonymsAPI()
  
                     } else {
                         print("no list")
@@ -496,6 +524,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     // Update UI
                     self.definitionTableView.reloadData()
                     self.updatePrompt()
+                    self.synonymsAPI()
                 }
    
                 
@@ -504,6 +533,33 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
 
+    
+    // Synonyms API ------------------------------------------------------------------------------------------------
+    // This will be called after all the others are completed and displayed ***
+    func synonymsAPI() {
+        let headers = ["X-Mashape-Key": "MHOVySweXOmsh65XEw8g4ZIbCooup10TJsMjsnK8rElAjjA3JJ"]
+        let wordsURL = "https://wordsapiv1.p.mashape.com/words/\(self.senderText)/synonyms"
+        Alamofire.request(.GET, wordsURL, headers: headers).responseJSON { response in
+            if let responseArray = response.result.value as? NSDictionary {
+                if let synArray = responseArray["synonyms"] as? NSArray {
+                    self.synonymsArray = synArray as! Array // <---------- SAVING SYNONYMS HERE
+                    
+                    // If no synonyms found the global self.synonymsArray will always default to []
+                    
+                }
+                else {
+                    print("no synonyms found")
+                    self.synonymsArray = []
+                }
+            } else {
+                print("no synonyms found")
+                self.synonymsArray = []
+            }
+        }
+    } // End Synonyms API Call --------------------------------------------------------------------------------------
+    
+    
+    
     
     
     
@@ -550,8 +606,26 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         
+        // Set original top constraints
+        self.originalSearchIconTopConstraint = 15
+        self.originalTopHeaderLabelTopConstraint = 5
+        self.originalSoundIconTopConstraint = 17
+        
+        self.searchIconTopConstraint.constant = self.originalSearchIconTopConstraint
+        self.topHeaderTopConstraint.constant = self.originalTopHeaderLabelTopConstraint
+        self.soundImageTopConstraint.constant = self.originalSoundIconTopConstraint
+        
+        
         
         self.view.backgroundColor = UIColorFromRGB(0x00c860)
+        
+        
+        
+        // Rounded screen display corners
+        self.view.layer.cornerRadius = 8
+        self.topInfoBarBackgroundView.layer.cornerRadius = 8
+        
+        
         self.topHeaderLabel.textColor = UIColorFromRGB(0x333333)
         
         // Top header left constraint
@@ -619,6 +693,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
         
         
+        
+        // Add guesture action to TOP RIGHT TAP ZONE
+        let randomIconTap = UITapGestureRecognizer(target: self, action: #selector(self.handleRandomIconTap))
+        self.topRightTapZone.userInteractionEnabled = true
+        self.topRightTapZone.addGestureRecognizer(randomIconTap)
+
+        
+        
+        
+        
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -653,13 +737,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // MARK: - Helper Functions ------------------------------------------------------------
     func cleanInputString(dirty: String) {
 
+        self.verticalOffset = 0
+        
+        
         if self.isFirstLoad == 1 {
             self.isFirstLoad = 0
         }
         
         self.dismissKeyboard()
         self.animateSearchBox()
-        self.verticalOffset = 0
+        
         
         
         
@@ -675,8 +762,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.promptLabel.text = "Searching..."
         self.shakeForRandView.hidden = true
         
-        // Reset wikiExtract variable
+        // Reset wikiExtract variable and synonyms array
         self.wikiExtract = ""
+        self.synonymsArray = [String]()
         
         // Hide sound image on new api call
         self.soundImage.hidden = true
@@ -804,21 +892,46 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
     
     func animateSearchBox() {
+        
+        // This is so that scroll down will work again to bring down the search bar
+        self.verticalOffset = 0
+        
         // Set transitions
-        if self.topViewHeightConstraint.constant == 150 || self.random == 1 {
-            self.searchTextField.alpha = 0
-            self.xButton.hidden = true
+        if self.topViewHeightConstraint.constant == 130 || self.random == 1 {
+
             self.transitionToSearchIcon()
-            self.topViewHeightConstraint.constant = 82
+            self.searchTextField.alpha = 0
+                
+            // If the x button is not hidden, hide it.
+            if self.xButton.hidden == false {
+                self.xButton.hidden = true
+            }
+
+            self.topViewHeightConstraint.constant = 75
+
+            self.searchIconTopConstraint.constant = self.originalSearchIconTopConstraint + 8  // <------ new constraint
+            self.topHeaderTopConstraint.constant = self.originalTopHeaderLabelTopConstraint + 8
+            self.soundImageTopConstraint.constant = self.originalSoundIconTopConstraint + 8
+            
+            self.randomIcon.alpha = 0
             dismissKeyboard()
+            
+            
+                
         } else {
+            self.searchIconTopConstraint.constant = self.originalSearchIconTopConstraint   // <------ new constraint
+            self.topHeaderTopConstraint.constant = self.originalTopHeaderLabelTopConstraint
+            self.soundImageTopConstraint.constant = self.originalSoundIconTopConstraint
+
             self.searchTextField.alpha = 1
-            self.topViewHeightConstraint.constant = 150
+            self.topViewHeightConstraint.constant = 130
             self.transitionToSearchIcon()
             self.searchTextField.text = ""
+            self.randomIcon.alpha = 1
             self.searchTextField.becomeFirstResponder()
         }
-        
+     
+
         // Code to start animation
         self.view.setNeedsLayout()
         UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0.7, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
@@ -988,11 +1101,19 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 self.verticalOffset = 1
               
                 // Set changes tp be made in order to bring down search field
-                self.topViewHeightConstraint.constant = 150
-                self.searchTextField.alpha = 1
-                self.searchTextField.text = ""
-                self.transitionToSearchIcon()
+     
                 
+                self.searchIconTopConstraint.constant = self.originalSearchIconTopConstraint   // <------ new constraint
+                self.topHeaderTopConstraint.constant = self.originalTopHeaderLabelTopConstraint
+                self.soundImageTopConstraint.constant = self.originalSoundIconTopConstraint
+                self.searchTextField.alpha = 1
+                self.topViewHeightConstraint.constant = 130
+                self.transitionToSearchIcon()
+                self.searchTextField.text = ""
+                
+                self.randomIcon.alpha = 1
+                
+
                 // Code to start animation
                 self.view.setNeedsLayout()
                 UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
@@ -1009,16 +1130,32 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         else if (self.lastContentOffset < scrollView.contentOffset.y) {
             // Hide the keyboard and search bar if the user scrolls down in the table view.
             // Only do this if the contentOffset.y is above a certain point as to not conflict with the first if statement in this function.
-            if self.lastContentOffset > 150 {
+            if self.lastContentOffset > 130 {
             
                 // Hide the search text field only if its not already hidden
-                if self.topViewHeightConstraint.constant != 82 {
-                    self.searchTextField.alpha = 0
-                    self.topViewHeightConstraint.constant = 82
-                    dismissKeyboard()
-                    self.verticalOffset = 0
+                if self.topViewHeightConstraint.constant != 75 {
+                    
                     self.transitionToSearchIcon()
-
+                    self.searchTextField.alpha = 0
+                    
+                    // If the x button is not hidden, hide it.
+                    if self.xButton.hidden == false {
+                        self.xButton.hidden = true
+                    }
+                    
+                    self.topViewHeightConstraint.constant = 75
+                    
+                    self.searchIconTopConstraint.constant = self.originalSearchIconTopConstraint + 8  // <------ new constraint
+                    self.topHeaderTopConstraint.constant = self.originalTopHeaderLabelTopConstraint + 8
+                    self.soundImageTopConstraint.constant = self.originalSoundIconTopConstraint + 8
+                    
+                    self.randomIcon.alpha = 0
+                    dismissKeyboard()
+                    
+                    
+                    // This is so that scroll down will work again
+                    self.verticalOffset = 0
+                    
                     // Code to start animation
                     self.view.setNeedsLayout()
                     UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
