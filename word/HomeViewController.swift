@@ -343,12 +343,23 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                 
                                 sampleString = extractStr as NSString
                                 sampleString = sampleString.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 14))
+                                
+                                // test word: Norristown
+                                var sampleString2 = extractStr as NSString
+                                sampleString2 = sampleString2.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 10))
+                                
                                 if sampleString == "\(capitalizedString) may refer to:" {
                                     // Remove the front part
                                     sampleString = extractStr as NSString
                                     sampleString = sampleString.substringWithRange(NSRange(location: capitalizedString.characters.count + 14, length: extractStr.characters.count - (capitalizedString.characters.count + 14)))
                                     extractStr = sampleString as String
-                                } // End remove "?? may refer to:" ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+                                } else if sampleString2 == "\(capitalizedString) may mean:" {
+                                    // Remove the front part
+                                    sampleString2 = extractStr as NSString
+                                    sampleString2 = sampleString2.substringWithRange(NSRange(location: capitalizedString.characters.count + 10, length: extractStr.characters.count - (capitalizedString.characters.count + 10)))
+                                    extractStr = sampleString2 as String
+                                }
+                                // End remove "?? may refer to:" ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                                 
                                 self.wikiExtract = extractStr
                             }
