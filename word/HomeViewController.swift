@@ -331,11 +331,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
                             // Cache the extract in the global variable. Check if it's useful info.
                             if extractStr.characters.count > cleanString.characters.count + 15  && sampleString != "From other capitalisation:" {
+
+                                // If the extract starts with "?? may refer to:" Remove that part :::::::::::::::::::::::::::::::::::::
+                                var capitalizedString = cleanString
                                 
-                                var capitalizedString = cleanString.localizedCapitalizedString
+                                // Capitalizing first letter only
+                                capitalizedString = String(capitalizedString.characters.first!).capitalizedString + String(capitalizedString.characters.dropFirst())
+                                
+                                // Removing front and back whitespace
                                 capitalizedString = capitalizedString.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
                                 
-                                // If the extract starts with "?? may refer to:" Remove that part
                                 sampleString = extractStr as NSString
                                 sampleString = sampleString.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 14))
                                 if sampleString == "\(capitalizedString) may refer to:" {
@@ -343,7 +348,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                     sampleString = extractStr as NSString
                                     sampleString = sampleString.substringWithRange(NSRange(location: capitalizedString.characters.count + 14, length: extractStr.characters.count - (capitalizedString.characters.count + 14)))
                                     extractStr = sampleString as String
-                                }
+                                } // End remove "?? may refer to:" ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                                 
                                 self.wikiExtract = extractStr
                             }
