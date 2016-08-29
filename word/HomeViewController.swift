@@ -194,8 +194,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         // Set the top title text
         self.setTopTitleText(sender.text!)
 
-        // Move to the top of the table every time a new search is initiated
-        self.definitionTableView.contentOffset = CGPointMake(0, 0 - self.definitionTableView.contentInset.top);
+        
         
         // Cleans the input string and then calls the API
         self.cleanInputString(sender.text!)
@@ -284,8 +283,19 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                     exampleSave = exp1
                                 }
                             } else {
-                                print("no mas")
+                                print("example count <= 0")
                             }
+                        }
+
+                        // Clean HTML strings
+                        if definitionSave != "" {
+                            definitionSave = definitionSave.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
+                            definitionSave = self.removeSpecialCharsFromStringWiki(definitionSave)
+                        }
+                        
+                        if exampleSave != "" {
+                            exampleSave = exampleSave.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
+                            exampleSave = self.removeSpecialCharsFromStringWiki(exampleSave)
                         }
                         
                         // Cache the data in a global array if the definition is not blank
@@ -543,16 +553,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             if let responseArray = response.result.value as? NSDictionary {
                 if let synArray = responseArray["synonyms"] as? NSArray {
                     self.synonymsArray = synArray as! Array // <---------- SAVING SYNONYMS HERE
-                    
                     // If no synonyms found the global self.synonymsArray will always default to []
-                    
                 }
                 else {
-                    print("no synonyms found")
                     self.synonymsArray = []
                 }
             } else {
-                print("no synonyms found")
                 self.synonymsArray = []
             }
         }
@@ -627,6 +633,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         self.topHeaderLabel.textColor = UIColorFromRGB(0x333333)
+        
+        
         
         // Top header left constraint
         self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2)
@@ -737,6 +745,11 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // MARK: - Helper Functions ------------------------------------------------------------
     func cleanInputString(dirty: String) {
 
+        // Move to the top of the table every time a new search is initiated
+        self.definitionTableView.contentOffset = CGPointMake(0, 0 - self.definitionTableView.contentInset.top);
+        
+        
+        
         self.verticalOffset = 0
         
         
@@ -854,7 +867,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func updatePrompt() {
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" {
-            self.promptLabel.text = "Perhaps one day '\(self.senderText)' will be a searchable word. Today is not that day.. Try another!"
+            self.promptLabel.text = "Perhaps one day '\(self.senderTextDirty)' will be a searchable word. Today is not that day.. Try another!"
             self.shakeForRandView.hidden = false
         } else {
             if self.prevRand == 1 {
@@ -973,40 +986,34 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // How should I create each cell?
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         
-        self.currentRow = indexPath.row
+        self.currentRow = indexPath.row // Used for scrolling feature
         
         if indexPath.row < self.definitions.count {
         
-            
+            // Create cell
             let cell = tableView.dequeueReusableCellWithIdentifier("myCell") as! CustomDefinitionCell
             
-            // Clean HTML string
-            var definitionStr = self.definitions[indexPath.row].definition.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
-            definitionStr = self.removeSpecialCharsFromStringWiki(definitionStr)
-            
-            var exampleStr = self.definitions[indexPath.row].example.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
-            exampleStr = self.removeSpecialCharsFromStringWiki(exampleStr)
-            
-
-            // Set table data
-            cell.typeLabel.text = self.definitions[indexPath.row].type
-            cell.definitionLabel.text = definitionStr
-            cell.exampleLabel.text = exampleStr
-            
-            
-            // Hide sections that have no data
-            
-            cell.staticExampleLabel.hidden = false // Revert to default settings
-
-            if self.definitions[indexPath.row].example == "" {
-                cell.staticExampleLabel.hidden = true
+            // Set table data (use extra safeguards so index is never out of range)
+            if indexPath.row <= (self.definitions.count - 1) {
+                cell.typeLabel.text = self.definitions[indexPath.row].type
+                cell.definitionLabel.text = self.definitions[indexPath.row].definition
+                cell.exampleLabel.text = self.definitions[indexPath.row].example
+            } else {
+                print("error ------> index out of range <------ WordAPI cell")
+                cell.typeLabel.text = "404"
+                cell.definitionLabel.text = ""
+                cell.exampleLabel.text = ""
             }
             
-            
-            // Set custom cell styles
+            // Set Custom Definition Cell Styling ::::::::::::::::::::::::::::::::::::::::::
             cell.tableCellView.layer.cornerRadius = 20
             cell.exampleLabel.textColor = UIColorFromRGB(0x00c860)
             
+            // Hide sections that have no data
+            cell.staticExampleLabel.hidden = false // Revert to default settings
+            if cell.exampleLabel.text == "" {
+                cell.staticExampleLabel.hidden = true
+            }
             
             // Change type text color based on type
             if cell.typeLabel.text == "noun" {
@@ -1024,19 +1031,23 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             // Set dynamic cell height
             self.definitionTableView.estimatedRowHeight = 80
             self.definitionTableView.rowHeight = UITableViewAutomaticDimension
-        
+            // Set Custom Definition Cell Styling ::::::::::::::::::::::::::::::::::::::: End
+            
             return cell
 
-        } else if self.wikiExtract != "" && indexPath.row == self.definitions.count {
-            // Wikipedia Extract Prototype Cells
             
-            // Dequeue the cell from our storyboard
+            
+            
+            
+        } else if self.wikiExtract != "" && indexPath.row == self.definitions.count {
+            
+            // Wikipedia Extract Prototype Cells
             let cell = tableView.dequeueReusableCellWithIdentifier("wikiCell") as! CustomWikiCell
             
-            // Set custom cell data
+            // Set custom table cell data
             cell.extractLabel.text = self.wikiExtract
             
-            // Set custom cell styles
+            // Set custom table cell styles
             cell.wikiCellView.layer.cornerRadius = 20
             
             // Set dynamic cell height
@@ -1045,32 +1056,59 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
             return cell
             
-        } else {
-            // Urban Dictionary Prototype Cells
-
-            // Calculate the corresponding index/row for uDLists
-            var index = 0
-            if self.wikiExtract == "" {
-                index = indexPath.row - self.definitions.count
-            } else {
-                index = indexPath.row - self.definitions.count - 1
-            }
             
-            // Dequeue the cell from our storyboard
+            
+            
+            
+        } else {
+            
+            // Urban Dictionary Prototype Cells
             let cell = tableView.dequeueReusableCellWithIdentifier("urbanCell") as! CustomUrbanCell
             
-            // Set custom cell data
-            cell.definitionLabel.text = self.uDLists[index].definition
-            cell.exampleLabel.text = self.uDLists[index].example
-            cell.userLabel.text = self.uDLists[index].author
-
+            // Calculate the corresponding index/row for uDLists
+            var index = -1
+            if self.wikiExtract == "" {
+                if self.definitions.count > 0 {
+                    index = indexPath.row - self.definitions.count
+                } else {
+                    index = indexPath.row
+                }
+            } else if self.wikiExtract != "" {
+                if self.definitions.count > 0 {
+                    index = indexPath.row - (self.definitions.count + 1)
+                } else {
+                    index = indexPath.row - 1
+                }
+            }
             
-            if self.uDLists[index].score >= 0 {
-                cell.scoreLabel.text = "+\(self.uDLists[index].score)"
-                cell.scoreLabel.textColor = UIColorFromRGB(0x9A6FF7)
+            if index > -1 {
+                // Set custom cell data (using savefguards)
+                if index <= (self.uDLists.count - 1) {
+                    cell.definitionLabel.text = self.uDLists[index].definition
+                    cell.exampleLabel.text = self.uDLists[index].example
+                    cell.userLabel.text = self.uDLists[index].author
+                    
+                    if self.uDLists[index].score >= 0 {
+                        cell.scoreLabel.text = "+\(self.uDLists[index].score)"
+                        cell.scoreLabel.textColor = UIColorFromRGB(0x9A6FF7)
+                    } else {
+                        cell.scoreLabel.text = "-\(self.uDLists[index].score)"
+                        cell.scoreLabel.textColor = UIColorFromRGB(0xFF3B65)
+                    }
+                    
+                } else {
+                    print("error ------> index out of range <------ Urban Dictionary cell -----> index over range")
+                    cell.definitionLabel.text = "Normally a 404 error like this should have crashed the app"
+                    cell.exampleLabel.text = "But hey, it didn't crash! :D"
+                    cell.userLabel.text = "404"
+                    cell.scoreLabel.text = "404"
+                }
             } else {
-                cell.scoreLabel.text = "-\(self.uDLists[index].score)"
-                cell.scoreLabel.textColor = UIColorFromRGB(0xFF3B65)
+                print("error ------> index out of range <------ Urban Dictionary cell ------> index under range")
+                cell.definitionLabel.text = "Normally a 404 error like this should have crashed the app"
+                cell.exampleLabel.text = "But hey, it didn't crash! :D"
+                cell.userLabel.text = "404"
+                cell.scoreLabel.text = "404"
             }
             
             // Set custom cell styles

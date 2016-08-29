@@ -99,7 +99,7 @@
                                         </constraints>
                                     </imageView>
                                     <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="sound" translatesAutoresizingMaskIntoConstraints="NO" id="C7c-uA-9Ii">
-                                        <rect key="frame" x="335" y="18" width="20" height="20"/>
+                                        <rect key="frame" x="347" y="18" width="20" height="20"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="20" id="XQa-WS-5fD"/>
                                             <constraint firstAttribute="width" secondItem="C7c-uA-9Ii" secondAttribute="height" multiplier="1:1" id="f5V-Py-ahT"/>
@@ -111,8 +111,8 @@
                                         <color key="textColor" red="0.90196079019999997" green="0.90196079019999997" blue="0.90196079019999997" alpha="1" colorSpace="calibratedRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Word." textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6ca-R3-MdD">
-                                        <rect key="frame" x="270" y="5" width="61" height="42"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Wordd." textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6ca-R3-MdD">
+                                        <rect key="frame" x="270" y="5" width="73" height="42"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="42" id="omd-h5-5J1"/>
                                         </constraints>
