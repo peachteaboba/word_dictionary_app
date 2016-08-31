@@ -34,6 +34,18 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     var random = 0
     var prevRand = 0 // to track if the current displayed word was a random one
     
+    
+    
+    // Similar words variables
+    var simSpelledArray = [String]()
+    var showSimPrompt = 0
+    var searchFromRedirect = 0
+    var noSimWords = 0
+    
+    
+    
+    
+    // Audio player
     var player = AVPlayer()
     
     
@@ -102,23 +114,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func handleRandomIconTap() {
         // User tapped the random button via the top right tap zone
-        handleRandTap()
+        self.handleRandTap()
     }
     
-    
-    
-    func handleSearchIconTap() {
-        animateSearchBox()
-        
-        // Stop the scroll movement by scrolling to the nearest row. This prevents the search bar to be hidden repeatedly during auto-scroll.
-        if currentRow > 1 {
-            self.definitionTableView.scrollToNearestSelectedRowAtScrollPosition(UITableViewScrollPosition.Middle, animated: true)
-        }
-
-    }
-    
-    
-    func handleRandTap() {
+     func handleRandTap() {
         self.random = 1
         self.prevRand = 1
        
@@ -128,6 +127,19 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         self.cleanInputString("rand")
     }
+    
+    func handleSearchIconTap() {
+        self.animateSearchBox()
+        
+        // Stop the scroll movement by scrolling to the nearest row. This prevents the search bar to be hidden repeatedly during auto-scroll.
+        if currentRow > 1 {
+            self.definitionTableView.scrollToNearestSelectedRowAtScrollPosition(UITableViewScrollPosition.Middle, animated: true)
+        }
+
+    }
+    
+    
+   
     
     
     
@@ -191,12 +203,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     @IBAction func handleSearchButtonPressed(sender: UITextField) {
-        // Set the top title text
+        
+        // Set top title text for this new input word
         self.setTopTitleText(sender.text!)
 
-        
-        
-        // Cleans the input string and then calls the API
+
+        // Clean the input string and then call the APIs
         self.cleanInputString(sender.text!)
     }
     
@@ -318,11 +330,11 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 if self.random == 1 {
                     self.random = 0
-                    print("error ---> no random found!!!")
-                    self.topHeaderLabel.text = "404"
-                    self.topHeaderLabel.textColor = self.UIColorFromRGB(0x333333)
-                    self.senderTextDirty = "404"
-                    self.senderText = "404"
+                    print("warning ---> no random found!!! <--- starting another random search")
+                    
+                    // If no random found then restart the random search
+                    self.handleRandTap()
+
                 }
                 
                 if self.topHeaderLabel.textColor != self.UIColorFromRGB(0x333333) {
@@ -452,24 +464,19 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                             self.uDTags.append(val as! String)
                         }
                     } else {
-                        print("no tags")
+                        print("Warning ---> No Urban Dictionary Tags Data Returned")
                     }
                     
                     // SOUNDS
                     if let sounds = res["sounds"] as? NSArray {
                         for val in sounds {
                             self.uDSounds.append(val as! String)
-                            
-                            
                             // If there are sounds, then show the sound image.
                             self.soundImage.hidden = false
-                            
                             self.refreshTopTitleConstraint()
-
-                            
                         }
                     } else {
-                        print("no sounds")
+                        print("Warning ---> No Urban Dictionary Sounds Data Returned")
                     }
                     
                     // LIST
@@ -514,30 +521,36 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                 let dataToInsert = uDList(defid: defid, word: word, author: author, permalink: permalink, definition: definition, example: example, thumbs_up: thumbs_up, thumbs_down: thumbs_down)
                                 self.uDLists.append(dataToInsert)
                             }
-
                         }
                         
                         // Sort according to score
                         self.uDLists.sortInPlace { $0.score > $1.score }
-                        
-                        
+
                         // Update UI
-                        self.definitionTableView.reloadData()
+//                        self.definitionTableView.reloadData()
                         self.updatePrompt()
-                        self.synonymsAPI()
+//                        self.synonymsAPI()
+                        
+                        
+                        // Similarly Spelled Words API <------- (new)
+//                        self.simSpelledAPI()
+                        
  
                     } else {
-                        print("no list")
+                        print("Warning ---> No Urban Dictionary List Data Returned")
                     }
                     
                 } else {
                     // Update UI
-                    self.definitionTableView.reloadData()
+//                    self.definitionTableView.reloadData()
                     self.updatePrompt()
-                    self.synonymsAPI()
+//                    self.synonymsAPI()
+                    
+                    
+                    // Similarly Spelled Words API <------- (new)
+//                    self.simSpelledAPI()
+                    
                 }
-   
-                
         } // End URBAN DICTIONARY API ------------------------------------------------------------------------------
     }
     
@@ -552,8 +565,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         Alamofire.request(.GET, wordsURL, headers: headers).responseJSON { response in
             if let responseArray = response.result.value as? NSDictionary {
                 if let synArray = responseArray["synonyms"] as? NSArray {
-                    self.synonymsArray = synArray as! Array // <---------- SAVING SYNONYMS HERE
+                    self.synonymsArray = synArray as! Array // <----------------------------------------- SAVING SYNONYMS HERE!
                     // If no synonyms found the global self.synonymsArray will always default to []
+                    
                 }
                 else {
                     self.synonymsArray = []
@@ -563,6 +577,87 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             }
         }
     } // End Synonyms API Call --------------------------------------------------------------------------------------
+    
+    
+    
+    
+    
+    
+    // Similarily Spelled Words API (From IBM) ----------------------------------------------------------------------
+    // This will be called after all the others are completed and displayed ***
+    func simSpelledAPI() {
+        
+        // Remove special characters from url string and replace spaces with plus.
+        var trimmedString = self.removeSpecialCharsFromString(self.senderTextDirty)
+        trimmedString = trimmedString.stringByReplacingOccurrencesOfString(" ", withString: "+")
+        
+        let headers = ["X-Mashape-Key": "MHOVySweXOmsh65XEw8g4ZIbCooup10TJsMjsnK8rElAjjA3JJ"]
+        let wordsURL = "https://montanaflynn-spellcheck.p.mashape.com/check/?text=\(trimmedString)"
+        
+        Alamofire.request(.GET, wordsURL, headers: headers).responseJSON { response in
+            if let responseArray = response.result.value as? NSDictionary {
+                
+                if let corrections = responseArray["corrections"] as? NSDictionary {
+                
+                    for (_, value) in corrections {
+                        
+                        // If there are suggestion words, save them.
+                        var suggestions = []
+                        if let valueArr = value as? NSArray {
+                            suggestions = valueArr as Array
+                        }
+                        
+                        if suggestions.count > 0 {
+
+                            for dirtyWord in suggestions {
+                                // Clean each word and then compare to trimmedString
+                                var notSoDirtyWord = dirtyWord as! String
+                                var compareString = trimmedString
+                                    
+                                // Make all characters lower case
+                                notSoDirtyWord = notSoDirtyWord.lowercaseString
+                                compareString = compareString.lowercaseString
+                                    
+                                // Remove all special characters from string
+                                notSoDirtyWord = self.removeSpecialCharsFromString(notSoDirtyWord)
+                                    
+                                // Remove Spaces
+                                notSoDirtyWord = notSoDirtyWord.stringByReplacingOccurrencesOfString(" ", withString: "")
+                                    
+                                // Only add to the array if the word is different
+                                if notSoDirtyWord != compareString {
+                                    if var saveWord = dirtyWord as? String {
+                                        saveWord = saveWord.lowercaseString
+                                        self.simSpelledArray.append(saveWord)
+                                    }
+                                }
+                            } // End for loop
+                        }
+                    } // End for loop
+
+                    if self.simSpelledArray.count == 0 {
+                        self.noSimWords = 1
+                    }
+                    
+                    
+                    // Update UI
+                    self.definitionTableView.reloadData()
+
+                }
+                else {
+                    self.noSimWords = 1
+                    print("no responseArray['corrections']")
+                }
+
+            } else {
+                self.noSimWords = 1
+                print("no responseArray")
+            }
+        }
+    } // End Similarily Spelled Words API Call ----------------------------------------------------------------------
+    
+    
+    
     
     
     
@@ -609,6 +704,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         // Motion detect for shake guesture
         self.becomeFirstResponder()
+        self.showSimPrompt = 0
+        
+        
+        self.definitionTableView.delegate = self
+        self.definitionTableView.dataSource = self
+       
         
         
         
@@ -675,9 +776,15 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.searchTextField.layer.sublayerTransform = CATransform3DMakeTranslation(20, 2, 0)
         self.searchTextField.becomeFirstResponder()
         
+        
+        
+        
         //Looks for single or multiple taps ----> Used to hide keyboard
         let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.dismissKeyboard))
         view.addGestureRecognizer(tap)
+        
+        tap.cancelsTouchesInView = false
+        
         
         
         // Add guesture action to search icon
@@ -758,9 +865,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         }
         
         self.dismissKeyboard()
+        
+        
         self.animateSearchBox()
         
-        
+        // Reset searchFromRedirect variable
+        self.searchFromRedirect = 0
         
         
         
@@ -779,11 +889,28 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.wikiExtract = ""
         self.synonymsArray = [String]()
         
+        
+        
+        // Reset similarly spelled words variables
+        self.simSpelledArray = [String]()
+        self.showSimPrompt = 0
+        self.noSimWords = 0
+        
+        
+        
+        
         // Hide sound image on new api call
         self.soundImage.hidden = true
         
         // Remove spaces from input and create the URL string.
         var trimmedString = dirty.stringByReplacingOccurrencesOfString(" ", withString: "")
+        
+        
+        
+        
+        
+        // Set the top title text ::::::::::::::::::::::::::::::::::::::::::::::::
+        
         
         // Give the user a search term if they search for an empty string
         if trimmedString == "" {
@@ -791,12 +918,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             self.setTopTitleText(trimmedString)
         }
         
-        
         // Change the string if it's really really long
         if trimmedString.characters.count > 50 {
             trimmedString = "long"
             self.setTopTitleText(trimmedString)
         }
+        
+        
+        
+        
+        
         
         
         let cleanString = removeSpecialCharsFromString(trimmedString)
@@ -866,15 +997,25 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     func updatePrompt() {
-        if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" {
-            self.promptLabel.text = "Perhaps one day '\(self.senderTextDirty)' will be a searchable word. Today is not that day.. Try another!"
-            self.shakeForRandView.hidden = false
+        
+        self.promptLabel.hidden = true
+        
+        if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 0 {
+
+            // No data to display. Show Similar words list instead.
+            self.showSimPrompt = 1
+            self.definitionTableView.reloadData()
+            
+            // Calling the similar word API because there were no results.
+            self.simSpelledAPI()
+            
         } else {
             if self.prevRand == 1 {
                 // vibrate to alert the user some random content is found
 //                AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
             }
-            self.promptLabel.hidden = true
+        
+            self.definitionTableView.reloadData()
         }
     }
     
@@ -910,7 +1051,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.verticalOffset = 0
         
         // Set transitions
-        if self.topViewHeightConstraint.constant == 130 || self.random == 1 {
+        if self.topViewHeightConstraint.constant == 130 || self.random == 1 || self.searchFromRedirect == 1 {
 
             self.transitionToSearchIcon()
             self.searchTextField.alpha = 0
@@ -974,87 +1115,183 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // MARK: - Table View Prototype Functions ------------------------------------------------------------
    
+    
+    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+
+        if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
+            
+            
+            if indexPath.row == 0 {
+                return 200
+            } else {
+                return UITableViewAutomaticDimension
+            }
+            
+            
+            
+            
+            
+        } else {
+            return UITableViewAutomaticDimension
+        }
+        
+        
+    }
+    
+    
+    
+    
+    
+    
     // How many cells are we going to need?
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if self.wikiExtract != "" {
-            return self.uDLists.count + self.definitions.count + 1
+        
+        if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
+            
+            
+            
+            
+            if self.simSpelledArray.count > 0 {
+  
+                // Show similarly spelled words
+                return self.simSpelledArray.count + 1
+                
+            } else {
+                return 1
+            }
+    
+            
+            
+
         } else {
-            return self.uDLists.count + self.definitions.count
+            if self.wikiExtract != "" {
+                return self.uDLists.count + self.definitions.count + 1
+            } else {
+                return self.uDLists.count + self.definitions.count
+            }
         }
     }
+    
+    
+    
+    
+    // When the user clicks on a table view cell
+    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        
+//        print("touched")
+        
+        
+        
+        if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
+            
+            // Check to see if the user clicked a word (not the top prompt)
+            if self.simSpelledArray.count > 0 && indexPath.row > 0 {
+                let index = indexPath.row - 1
+                
+                if index < self.simSpelledArray.count {
+                 
+                    
+                    self.searchFromRedirect = 1
+                    let wordToSearch = self.simSpelledArray[index]
+                    
+                    // Set top title text for this new input word
+                    self.setTopTitleText(wordToSearch)
+                    
+                    
+                    // Clean the input string and then call the APIs
+                    self.cleanInputString(wordToSearch)
+                    
+                    
+                    
+                    
+                } else {
+                    print("error ------> index out of range <------ User clicked a similar word")
+                   
+                }
+            }
+        }
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     // How should I create each cell?
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         
         self.currentRow = indexPath.row // Used for scrolling feature
         
-        if indexPath.row < self.definitions.count {
-        
-            // Create cell
-            let cell = tableView.dequeueReusableCellWithIdentifier("myCell") as! CustomDefinitionCell
+        // This is the rare case that no info is found on the given word
+        if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
             
-            // Set table data (use extra safeguards so index is never out of range)
-            if indexPath.row <= (self.definitions.count - 1) {
-                cell.typeLabel.text = self.definitions[indexPath.row].type
-                cell.definitionLabel.text = self.definitions[indexPath.row].definition
-                cell.exampleLabel.text = self.definitions[indexPath.row].example
-            } else {
-                print("error ------> index out of range <------ WordAPI cell")
-                cell.typeLabel.text = "404"
-                cell.definitionLabel.text = ""
-                cell.exampleLabel.text = ""
-            }
-            
-            // Set Custom Definition Cell Styling ::::::::::::::::::::::::::::::::::::::::::
-            cell.tableCellView.layer.cornerRadius = 20
-            cell.exampleLabel.textColor = UIColorFromRGB(0x00c860)
-            
-            // Hide sections that have no data
-            cell.staticExampleLabel.hidden = false // Revert to default settings
-            if cell.exampleLabel.text == "" {
-                cell.staticExampleLabel.hidden = true
-            }
-            
-            // Change type text color based on type
-            if cell.typeLabel.text == "noun" {
-                cell.typeLabel.textColor = UIColorFromRGB(0x2b9bea)
-            } else if cell.typeLabel.text == "adjective" {
-                cell.typeLabel.textColor = UIColorFromRGB(0x8548f3)
-            } else if cell.typeLabel.text == "verb" {
-                cell.typeLabel.textColor = UIColorFromRGB(0xf35648)
-            } else if cell.typeLabel.text == "exclamation" {
-                cell.typeLabel.textColor = UIColorFromRGB(0xf69130)
-            } else {
-                cell.typeLabel.textColor = UIColorFromRGB(0x2b4ec1)
-            }
 
-            // Set dynamic cell height
-            self.definitionTableView.estimatedRowHeight = 80
-            self.definitionTableView.rowHeight = UITableViewAutomaticDimension
-            // Set Custom Definition Cell Styling ::::::::::::::::::::::::::::::::::::::: End
-            
-            return cell
+            if indexPath.row == 0 {
+                
+                // Title cell for the similar words list
+                let cell = tableView.dequeueReusableCellWithIdentifier("spellingTitleCell") as! CustomSpellingTitleCell
+                
+                // Custom Cell Styling
+                cell.titleLabel.textColor = UIColorFromRGB(0x0c743e)
+                cell.myContentView.backgroundColor = UIColorFromRGB(0x00c860)
+                
+                cell.topPromptContentLabel.text = "Perhaps one day '\(self.senderTextDirty)' will return some search results. Today is not that day.. Try another!"
+                cell.topPromptContentLabel.textColor = UIColorFromRGB(0x0c743e)
+                
+                cell.shakeLabel.text = "Shake for Random Word"
+                cell.shakeLabel.textColor = UIColorFromRGB(0x00c860)
+                
+                cell.shakeView.backgroundColor = UIColorFromRGB(0x0c743e)
+                cell.shakeView.layer.cornerRadius = cell.shakeView.frame.height / 2
 
+                
+                if self.simSpelledArray.count == 0 && self.noSimWords == 0 {
+                    cell.titleLabel.text = ""
+                } else if self.simSpelledArray.count == 0 && self.noSimWords == 1 {
+                    cell.titleLabel.text = "No Similar Words Found.."
+                } else {
+                    cell.titleLabel.text = "Similarly Spelled Words:"
+                }
+                
+                return cell
+                
+                
+                
+            } else {
+                
+                // Word cell for the similar words list
+                let cell = tableView.dequeueReusableCellWithIdentifier("spellingCell") as! CustomSpellingCell
+                
+                let index = indexPath.row - 1
+                
+                // Set table data
+                if index < self.simSpelledArray.count {
+                    cell.wordLabel.text = self.simSpelledArray[index]
+                } else {
+                    print("error ------> index out of range <------ Similar Word cell")
+                    cell.wordLabel.text = "404"
+                }
+                
+                // Set styling
+                cell.wrapperView.layer.cornerRadius = cell.wrapperView.frame.height / 2
+                cell.wrapperView.backgroundColor = UIColor.whiteColor()
+                // Set dynamic cell height
+                self.definitionTableView.estimatedRowHeight = 80
+                self.definitionTableView.rowHeight = UITableViewAutomaticDimension
+                
+                return cell
+            }
             
             
-            
-            
-        } else if self.wikiExtract != "" && indexPath.row == self.definitions.count {
-            
-            // Wikipedia Extract Prototype Cells
-            let cell = tableView.dequeueReusableCellWithIdentifier("wikiCell") as! CustomWikiCell
-            
-            // Set custom table cell data
-            cell.extractLabel.text = self.wikiExtract
-            
-            // Set custom table cell styles
-            cell.wikiCellView.layer.cornerRadius = 20
-            
-            // Set dynamic cell height
-            self.definitionTableView.estimatedRowHeight = 80
-            self.definitionTableView.rowHeight = UITableViewAutomaticDimension
-            
-            return cell
             
             
             
@@ -1062,65 +1299,145 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
         } else {
             
-            // Urban Dictionary Prototype Cells
-            let cell = tableView.dequeueReusableCellWithIdentifier("urbanCell") as! CustomUrbanCell
-            
-            // Calculate the corresponding index/row for uDLists
-            var index = -1
-            if self.wikiExtract == "" {
-                if self.definitions.count > 0 {
-                    index = indexPath.row - self.definitions.count
+            if indexPath.row < self.definitions.count {
+                
+                // Create cell
+                let cell = tableView.dequeueReusableCellWithIdentifier("myCell") as! CustomDefinitionCell
+                
+                // Set table data (use extra safeguards so index is never out of range)
+                if indexPath.row <= (self.definitions.count - 1) {
+                    cell.typeLabel.text = self.definitions[indexPath.row].type
+                    cell.definitionLabel.text = self.definitions[indexPath.row].definition
+                    cell.exampleLabel.text = self.definitions[indexPath.row].example
                 } else {
-                    index = indexPath.row
+                    print("error ------> index out of range <------ WordAPI cell")
+                    cell.typeLabel.text = "404"
+                    cell.definitionLabel.text = ""
+                    cell.exampleLabel.text = ""
                 }
-            } else if self.wikiExtract != "" {
-                if self.definitions.count > 0 {
-                    index = indexPath.row - (self.definitions.count + 1)
+                
+                // Set Custom Definition Cell Styling ::::::::::::::::::::::::::::::::::::::::::
+                cell.tableCellView.layer.cornerRadius = 20
+                cell.exampleLabel.textColor = UIColorFromRGB(0x00c860)
+                
+                // Hide sections that have no data
+                cell.staticExampleLabel.hidden = false // Revert to default settings
+                if cell.exampleLabel.text == "" {
+                    cell.staticExampleLabel.hidden = true
+                }
+                
+                // Change type text color based on type
+                if cell.typeLabel.text == "noun" {
+                    cell.typeLabel.textColor = UIColorFromRGB(0x2b9bea)
+                } else if cell.typeLabel.text == "adjective" {
+                    cell.typeLabel.textColor = UIColorFromRGB(0x8548f3)
+                } else if cell.typeLabel.text == "verb" {
+                    cell.typeLabel.textColor = UIColorFromRGB(0xf35648)
+                } else if cell.typeLabel.text == "exclamation" {
+                    cell.typeLabel.textColor = UIColorFromRGB(0xf69130)
                 } else {
-                    index = indexPath.row - 1
+                    cell.typeLabel.textColor = UIColorFromRGB(0x2b4ec1)
                 }
-            }
-            
-            if index > -1 {
-                // Set custom cell data (using savefguards)
-                if index <= (self.uDLists.count - 1) {
-                    cell.definitionLabel.text = self.uDLists[index].definition
-                    cell.exampleLabel.text = self.uDLists[index].example
-                    cell.userLabel.text = self.uDLists[index].author
-                    
-                    if self.uDLists[index].score >= 0 {
-                        cell.scoreLabel.text = "+\(self.uDLists[index].score)"
-                        cell.scoreLabel.textColor = UIColorFromRGB(0x9A6FF7)
+                
+                // Set dynamic cell height
+                self.definitionTableView.estimatedRowHeight = 80
+                self.definitionTableView.rowHeight = UITableViewAutomaticDimension
+                // Set Custom Definition Cell Styling ::::::::::::::::::::::::::::::::::::::: End
+                
+                return cell
+                
+            } else if self.wikiExtract != "" && indexPath.row == self.definitions.count {
+                
+                // Wikipedia Extract Prototype Cells
+                let cell = tableView.dequeueReusableCellWithIdentifier("wikiCell") as! CustomWikiCell
+                
+                // Set custom table cell data
+                cell.extractLabel.text = self.wikiExtract
+                
+                // Set custom table cell styles
+                cell.wikiCellView.layer.cornerRadius = 20
+                
+                // Set dynamic cell height
+                self.definitionTableView.estimatedRowHeight = 80
+                self.definitionTableView.rowHeight = UITableViewAutomaticDimension
+                
+                return cell
+                
+            } else {
+                
+                // Urban Dictionary Prototype Cells
+                let cell = tableView.dequeueReusableCellWithIdentifier("urbanCell") as! CustomUrbanCell
+                
+                // Calculate the corresponding index/row for uDLists
+                var index = -1
+                if self.wikiExtract == "" {
+                    if self.definitions.count > 0 {
+                        index = indexPath.row - self.definitions.count
                     } else {
-                        cell.scoreLabel.text = "-\(self.uDLists[index].score)"
-                        cell.scoreLabel.textColor = UIColorFromRGB(0xFF3B65)
+                        index = indexPath.row
                     }
-                    
+                } else if self.wikiExtract != "" {
+                    if self.definitions.count > 0 {
+                        index = indexPath.row - (self.definitions.count + 1)
+                    } else {
+                        index = indexPath.row - 1
+                    }
+                }
+                
+                if index > -1 {
+                    // Set custom cell data (using savefguards)
+                    if index <= (self.uDLists.count - 1) {
+                        cell.definitionLabel.text = self.uDLists[index].definition
+                        cell.exampleLabel.text = self.uDLists[index].example
+                        cell.userLabel.text = self.uDLists[index].author
+                        
+                        if self.uDLists[index].score >= 0 {
+                            cell.scoreLabel.text = "+\(self.uDLists[index].score)"
+                            cell.scoreLabel.textColor = UIColorFromRGB(0x9A6FF7)
+                        } else {
+                            cell.scoreLabel.text = "-\(self.uDLists[index].score)"
+                            cell.scoreLabel.textColor = UIColorFromRGB(0xFF3B65)
+                        }
+                        
+                    } else {
+                        print("error ------> index out of range <------ Urban Dictionary cell -----> index over range")
+                        cell.definitionLabel.text = "Normally a 404 error like this should have crashed the app"
+                        cell.exampleLabel.text = "But hey, it didn't crash! :D"
+                        cell.userLabel.text = "404"
+                        cell.scoreLabel.text = "404"
+                    }
                 } else {
-                    print("error ------> index out of range <------ Urban Dictionary cell -----> index over range")
+                    print("error ------> index out of range <------ Urban Dictionary cell ------> index under range")
                     cell.definitionLabel.text = "Normally a 404 error like this should have crashed the app"
                     cell.exampleLabel.text = "But hey, it didn't crash! :D"
                     cell.userLabel.text = "404"
                     cell.scoreLabel.text = "404"
                 }
-            } else {
-                print("error ------> index out of range <------ Urban Dictionary cell ------> index under range")
-                cell.definitionLabel.text = "Normally a 404 error like this should have crashed the app"
-                cell.exampleLabel.text = "But hey, it didn't crash! :D"
-                cell.userLabel.text = "404"
-                cell.scoreLabel.text = "404"
+                
+                // Set custom cell styles
+                cell.urbanCellView.layer.cornerRadius = 20
+                cell.exampleLabel.textColor = UIColorFromRGB(0x00c860)
+                
+                // Set dynamic cell height
+                self.definitionTableView.estimatedRowHeight = 80
+                self.definitionTableView.rowHeight = UITableViewAutomaticDimension
+                
+                return cell
             }
             
-            // Set custom cell styles
-            cell.urbanCellView.layer.cornerRadius = 20
-            cell.exampleLabel.textColor = UIColorFromRGB(0x00c860)
             
-            // Set dynamic cell height
-            self.definitionTableView.estimatedRowHeight = 80
-            self.definitionTableView.rowHeight = UITableViewAutomaticDimension
-
-            return cell
+            
         }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
     }
     
     
