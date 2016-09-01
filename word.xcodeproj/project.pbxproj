@@ -23,6 +23,7 @@
 		937BF2DA1D6B91FF00003964 /* uDList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 937BF2D91D6B91FF00003964 /* uDList.swift */; };
 		937BF2E31D6B982100003964 /* CustomUrbanCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 937BF2E21D6B982100003964 /* CustomUrbanCell.swift */; };
 		937BF2E51D6B997700003964 /* CustomTagCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 937BF2E41D6B997700003964 /* CustomTagCell.swift */; };
+		93C8738B1D78946B00A724E4 /* CustomSynonymTitleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93C8738A1D78946B00A724E4 /* CustomSynonymTitleCell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -123,6 +124,7 @@
 		937BF2D91D6B91FF00003964 /* uDList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = uDList.swift; sourceTree = "<group>"; };
 		937BF2E21D6B982100003964 /* CustomUrbanCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomUrbanCell.swift; sourceTree = "<group>"; };
 		937BF2E41D6B997700003964 /* CustomTagCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomTagCell.swift; sourceTree = "<group>"; };
+		93C8738A1D78946B00A724E4 /* CustomSynonymTitleCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomSynonymTitleCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +178,7 @@
 				935FFEAC1D6FE2160026DC42 /* CustomWikiCell.swift */,
 				93492FF81D7530960064FCE3 /* CustomSpellingTitleCell.swift */,
 				93492FFA1D7530BC0064FCE3 /* CustomSpellingCell.swift */,
+				93C8738A1D78946B00A724E4 /* CustomSynonymTitleCell.swift */,
 				9367A2D01D6A61E300E4A765 /* Assets.xcassets */,
 				9367A2D21D6A61E300E4A765 /* LaunchScreen.storyboard */,
 				9367A2D51D6A61E300E4A765 /* Info.plist */,
@@ -332,6 +335,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9367A2CC1D6A61E300E4A765 /* HomeViewController.swift in Sources */,
+				93C8738B1D78946B00A724E4 /* CustomSynonymTitleCell.swift in Sources */,
 				937BF2E51D6B997700003964 /* CustomTagCell.swift in Sources */,
 				937BF2E31D6B982100003964 /* CustomUrbanCell.swift in Sources */,
 				93492FFB1D7530BC0064FCE3 /* CustomSpellingCell.swift in Sources */,

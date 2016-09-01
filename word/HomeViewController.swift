@@ -27,7 +27,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     var wikiExtract = ""
     var synonymsArray = [String]()
     
-    
+    var totalRows = 0 // total number of rows in the table (if there is data to show)
     var currentRow = 0 // used for scrolling to a specific row
     var verticalOffset = 0 // used for bringing down search field using scroll action
     var isFirstLoad = 1 // used to disable drag down gesture on first page after app loads
@@ -42,6 +42,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     var searchFromRedirect = 0
     var noSimWords = 0
     
+    var hasWiki = 0
+    var hasSynonym = 0
+    var showSynonymPrompt = 0
     
     
     
@@ -524,33 +527,22 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                         }
                         
                         // Sort according to score
-                        self.uDLists.sortInPlace { $0.score > $1.score }
+                        if self.uDLists.count > 1 {
+                            self.uDLists.sortInPlace { $0.score > $1.score }
+                        }
 
-                        // Update UI
-//                        self.definitionTableView.reloadData()
-                        self.updatePrompt()
-//                        self.synonymsAPI()
-                        
-                        
-                        // Similarly Spelled Words API <------- (new)
-//                        self.simSpelledAPI()
-                        
- 
                     } else {
                         print("Warning ---> No Urban Dictionary List Data Returned")
                     }
                     
+                    // Update UI
+                    self.updatePrompt()
+
                 } else {
                     // Update UI
-//                    self.definitionTableView.reloadData()
                     self.updatePrompt()
-//                    self.synonymsAPI()
-                    
-                    
-                    // Similarly Spelled Words API <------- (new)
-//                    self.simSpelledAPI()
-                    
                 }
+                
         } // End URBAN DICTIONARY API ------------------------------------------------------------------------------
     }
     
@@ -568,12 +560,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     self.synonymsArray = synArray as! Array // <----------------------------------------- SAVING SYNONYMS HERE!
                     // If no synonyms found the global self.synonymsArray will always default to []
                     
+                    // Update UI
+                    self.definitionTableView.reloadData()
                 }
                 else {
-                    self.synonymsArray = []
+                    // Update UI
+                    self.definitionTableView.reloadData()
                 }
             } else {
-                self.synonymsArray = []
+                // Update UI
+                self.definitionTableView.reloadData()
             }
         }
     } // End Synonyms API Call --------------------------------------------------------------------------------------
@@ -638,8 +634,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     if self.simSpelledArray.count == 0 {
                         self.noSimWords = 1
                     }
-                    
-                    
+
                     // Update UI
                     self.definitionTableView.reloadData()
 
@@ -647,11 +642,15 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 else {
                     self.noSimWords = 1
                     print("no responseArray['corrections']")
+                    // Update UI
+                    self.definitionTableView.reloadData()
                 }
 
             } else {
                 self.noSimWords = 1
                 print("no responseArray")
+                // Update UI
+                self.definitionTableView.reloadData()
             }
         }
     } // End Similarily Spelled Words API Call ----------------------------------------------------------------------
@@ -668,7 +667,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // GHIPHY API test -----------
     func giphyAPI() {
         
-        
+        // Someday we'll add some gifs. Maybe..
         
         
     }
@@ -885,6 +884,13 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.promptLabel.text = "Searching..."
         self.shakeForRandView.hidden = true
         
+        
+        self.totalRows = 0
+        self.hasWiki = 0
+        
+        
+        
+        
         // Reset wikiExtract variable and synonyms array
         self.wikiExtract = ""
         self.synonymsArray = [String]()
@@ -895,6 +901,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.simSpelledArray = [String]()
         self.showSimPrompt = 0
         self.noSimWords = 0
+        
+        
+        
+        // Reset synonym words variables
+        self.hasSynonym = 0
+        self.showSynonymPrompt = 0
         
         
         
@@ -1015,7 +1027,15 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 //                AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
             }
         
+            if self.showSimPrompt == 0 {
+                // There is data to show. Call synonyms API
+                self.synonymsAPI()
+                self.showSynonymPrompt = 1
+            }
+            
             self.definitionTableView.reloadData()
+            
+
         }
     }
     
@@ -1126,11 +1146,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             } else {
                 return UITableViewAutomaticDimension
             }
-            
-            
-            
-            
-            
+
         } else {
             return UITableViewAutomaticDimension
         }
@@ -1147,30 +1163,50 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
-            
-            
-            
-            
+            // No results found. Show similarly spelled words.
+ 
             if self.simSpelledArray.count > 0 {
-  
                 // Show similarly spelled words
                 return self.simSpelledArray.count + 1
-                
             } else {
                 return 1
             }
-    
-            
-            
 
         } else {
+            // At least one result was found and will be displayed. Show synonyms list.
+            var rowCount = 0
+                
             if self.wikiExtract != "" {
-                return self.uDLists.count + self.definitions.count + 1
-            } else {
-                return self.uDLists.count + self.definitions.count
+                rowCount += 1
+                self.hasWiki = 1
             }
+                
+            if self.synonymsArray.count > 0 {
+                rowCount += synonymsArray.count
+                self.hasSynonym = 1
+            }
+
+            self.totalRows = self.uDLists.count + self.definitions.count + rowCount
+            
+            if self.showSynonymPrompt == 1 {
+                return self.totalRows + 1 // Add one for synonyms title cell
+            } else {
+                return self.totalRows
+            }
+
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -1180,37 +1216,49 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
 //        print("touched")
         
-        
-        
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
             
-            // Check to see if the user clicked a word (not the top prompt)
+            // Check to see if the user clicked a similarly spelled word (not the top prompt)
             if self.simSpelledArray.count > 0 && indexPath.row > 0 {
                 let index = indexPath.row - 1
                 
                 if index < self.simSpelledArray.count {
-                 
-                    
+                  
                     self.searchFromRedirect = 1
                     let wordToSearch = self.simSpelledArray[index]
                     
                     // Set top title text for this new input word
                     self.setTopTitleText(wordToSearch)
                     
+                    // Clean the input string and then call the APIs
+                    self.cleanInputString(wordToSearch)
+                    
+                } else {
+                    print("error ------> index out of range <------ User clicked a similar word")
+                }
+            }
+        } else if self.showSynonymPrompt == 1 && self.synonymsArray.count > 0 {
+            
+            // Check to see if the user clicked on a row with a synonym word
+            if indexPath.row > self.totalRows - self.synonymsArray.count {
+              
+                let index = indexPath.row - self.definitions.count - self.hasWiki - self.uDLists.count - 1
+                
+                if index < self.synonymsArray.count {
+                    self.searchFromRedirect = 1 // This hides the keyboard and search bar if it's not already hidden
+                    let wordToSearch = self.synonymsArray[index]
+                    
+                    // Set top title text for this new input word
+                    self.setTopTitleText(wordToSearch)
                     
                     // Clean the input string and then call the APIs
                     self.cleanInputString(wordToSearch)
                     
-                    
-                    
-                    
-                } else {
-                    print("error ------> index out of range <------ User clicked a similar word")
-                   
                 }
+            } else {
+                print("error ------> index out of range <------ User clicked a synonym word")
             }
         }
-        
     }
     
     
@@ -1284,6 +1332,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 // Set styling
                 cell.wrapperView.layer.cornerRadius = cell.wrapperView.frame.height / 2
                 cell.wrapperView.backgroundColor = UIColor.whiteColor()
+                
                 // Set dynamic cell height
                 self.definitionTableView.estimatedRowHeight = 80
                 self.definitionTableView.rowHeight = UITableViewAutomaticDimension
@@ -1298,6 +1347,14 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
             
         } else {
+            
+            
+            
+            
+            
+            
+            // Info is found. Display the info in various cells.
+            
             
             if indexPath.row < self.definitions.count {
                 
@@ -1363,7 +1420,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 return cell
                 
-            } else {
+            } else if indexPath.row > self.definitions.count + self.hasWiki - 1 && indexPath.row < self.totalRows - self.synonymsArray.count {
                 
                 // Urban Dictionary Prototype Cells
                 let cell = tableView.dequeueReusableCellWithIdentifier("urbanCell") as! CustomUrbanCell
@@ -1423,6 +1480,58 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 self.definitionTableView.rowHeight = UITableViewAutomaticDimension
                 
                 return cell
+                
+                
+                
+            } else if indexPath.row == self.totalRows - self.synonymsArray.count {
+                // Synonyms title cell
+                let cell = tableView.dequeueReusableCellWithIdentifier("synonymTitleCell") as! CustomSynonymTitleCell
+                
+                
+                // Set table data
+                if self.synonymsArray.count > 0 {
+                    cell.titleLabel.text = "Synonyms:"
+                } else {
+                    cell.titleLabel.text = "No Synonyms Found.."
+                }
+                
+                
+                // Styles
+                cell.titleLabel.textColor = UIColorFromRGB(0x0c743e)
+                
+                
+                // Set dynamic cell height
+                self.definitionTableView.estimatedRowHeight = 80
+                self.definitionTableView.rowHeight = UITableViewAutomaticDimension
+                
+                
+                return cell
+                
+            } else {
+            
+                // Word cell for the synonym words list
+                let cell = tableView.dequeueReusableCellWithIdentifier("spellingCell") as! CustomSpellingCell
+                
+                let index = indexPath.row - self.definitions.count - self.hasWiki - self.uDLists.count - 1
+
+                // Set table data
+                if index < self.synonymsArray.count {
+                    cell.wordLabel.text = self.synonymsArray[index]
+                } else {
+                    print("error ------> index out of range <------ Synonyms Word cell")
+                    cell.wordLabel.text = "404"
+                }
+                
+                // Set styling
+                cell.wrapperView.layer.cornerRadius = cell.wrapperView.frame.height / 2
+                cell.wrapperView.backgroundColor = UIColor.whiteColor()
+                
+                // Set dynamic cell height
+                self.definitionTableView.estimatedRowHeight = 80
+                self.definitionTableView.rowHeight = UITableViewAutomaticDimension
+                
+                return cell
+                
             }
             
             
