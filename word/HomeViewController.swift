@@ -16,10 +16,13 @@ import AudioToolbox
 
 class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
-    
+
     // MARK: - Global Variables -------------------------------------------------------------------
     var senderText = String()
     var senderTextDirty = String()
+
+    
+    
     var definitions = [Definition]()
     var uDTags = [String]()
     var uDSounds = [String]()
@@ -161,7 +164,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     func handlePlaySound() {
-        // Check if there is a sound url in the sounds array
+        
+        // Check if there is a sound url in the Urban Dictionary sounds array
         if self.uDSounds.count > 0 {
            
             // Play the sound if the sound image is gray
@@ -194,7 +198,18 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 // Initiate new player so the sound will play from the beginning next time
                 self.player = AVPlayer()
             }
+        } else {
+            // No Urban Dictionary sounds. Play default sound instead.
+            
+            let wordToSay = self.removeSpecialCharsFromString(self.senderTextDirty)
+            self.talkToMe(wordToSay)
         }
+        
+        
+        
+        
+        
+        
     }
     
     func playerDidFinishPlaying(note: NSNotification) {
@@ -700,7 +715,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
         super.viewDidLoad()
         
-        
+
         // Motion detect for shake guesture
         self.becomeFirstResponder()
         self.showSimPrompt = 0
@@ -875,6 +890,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         self.senderTextDirty = dirty
         
+  
+        
         // Clear definition variable
         self.definitions = [Definition]()
         self.uDTags = [String]()
@@ -950,8 +967,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
     }
     
-    
-    
+    // Default speech synthesizer (siri voice)
+    func talkToMe(wordToSay: String) {
+        
+        let synthesizer = AVSpeechSynthesizer()
+        let utterance = AVSpeechUtterance(string: wordToSay)
+        utterance.rate = 0.5
+        
+        synthesizer.speakUtterance(utterance)
+        
+    }
     
     
     func setTopTitleText(word: String) {
