@@ -163,54 +163,62 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
     
     
-    func handlePlaySound() {
-        
-        // Check if there is a sound url in the Urban Dictionary sounds array
-        if self.uDSounds.count > 0 {
+    
+    // Function that executes when the the word shown in the top title label is tapped
+    func handleTopTitleLabelTap() {
+
+        // Only play sounds if the search input field is hidden
+        if self.searchTextField.alpha == 0 {
+            
+            // Check if there is a sound url in the Urban Dictionary sounds array
+            if self.uDSounds.count > 0 {
            
-            // Play the sound if the sound image is gray
-            if self.soundImage.image == UIImage(named: "sound") {
+                // Play the sound if the sound image is gray
+                if self.soundImage.image == UIImage(named: "sound") {
                 
-                // Right when the sound starts playing, change the color of the sound icon
-                self.soundImage.image = UIImage(named: "soundPlaying")
+                    // Right when the sound starts playing, change the color of the sound icon
+                    self.soundImage.image = UIImage(named: "soundPlaying")
                 
-                // Convert normal string to NSURL String
-                let url : NSURL = NSURL(string: self.uDSounds[0])!
+                    // Convert normal string to NSURL String
+                    let url : NSURL = NSURL(string: self.uDSounds[0])!
                 
-                // Create the player item that will play the sound
-                let playerItem = AVPlayerItem(URL: url)
+                    // Create the player item that will play the sound
+                    let playerItem = AVPlayerItem(URL: url)
                 
-                // Set an listener for when the sounds is done playing
-                NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: playerItem)
+                    // Set an listener for when the sounds is done playing
+                    NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: playerItem)
             
-                // Play the sound
-                self.player = AVPlayer(playerItem:playerItem)
-                self.player.volume = 1.0
-                self.player.play()
+                    // Play the sound
+                    self.player = AVPlayer(playerItem:playerItem)
+                    self.player.volume = 1.0
+                    self.player.play()
                 
+                } else {
+                    // Change the sound icon
+                    self.soundImage.image = UIImage(named: "sound")
+                
+                    // Stop playing the sound
+                    self.player.pause()
+                
+                    // Initiate new player so the sound will play from the beginning next time
+                    self.player = AVPlayer()
+                }
             } else {
-                // Change the sound icon
-                self.soundImage.image = UIImage(named: "sound")
-                
-                // Stop playing the sound
-                self.player.pause()
-                
-                // Initiate new player so the sound will play from the beginning next time
-                self.player = AVPlayer()
-            }
-        } else {
-            // No Urban Dictionary sounds. Play default sound instead.
+                // No Urban Dictionary sounds. Play default sound instead.
             
-            let wordToSay = self.removeSpecialCharsFromString(self.senderTextDirty)
-            self.talkToMe(wordToSay)
+                let wordToSay = self.removeSpecialCharsFromString(self.senderTextDirty)
+                self.talkToMe(wordToSay)
+            }
+            
+
+        } else {
+            // Search text input field is shown. Input word tapped into search field instead of playing sound.
+            self.searchTextField.text = self.topHeaderLabel.text
         }
-        
-        
-        
-        
-        
-        
     }
+    
+    
+    
     
     func playerDidFinishPlaying(note: NSNotification) {
         
@@ -808,7 +816,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         // Add guesture action to Top Header Label
-        let playSound = UITapGestureRecognizer(target: self, action: #selector(self.handlePlaySound))
+        let playSound = UITapGestureRecognizer(target: self, action: #selector(self.handleTopTitleLabelTap))
         self.topHeaderLabel.userInteractionEnabled = true
         self.topHeaderLabel.addGestureRecognizer(playSound)
         
