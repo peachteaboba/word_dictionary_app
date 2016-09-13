@@ -871,7 +871,80 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
  
 
     
+    
+    
+    
+    
+    
+    
     // MARK: - Helper Functions ------------------------------------------------------------
+    
+    func condenseWhiteSpace(word: String) -> String {
+        let components = word.componentsSeparatedByCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+        return components.filter { !$0.isEmpty }.joinWithSeparator(" ")
+    }
+    
+    
+    
+    // Send word data to API.
+    func sendPostAPI() {
+        let headers = ["secret": "robot"]
+        let url = "http://www.worddapp.com/wordSearched"
+        
+        var wordSave = self.removeSpecialCharsFromString(self.senderTextDirty)
+        wordSave = wordSave.lowercaseString
+        
+        var defSave = 0
+        var urbanSave = 0
+        var bothSave = 0
+        
+        if self.definitions.count > 0 {
+            defSave = 1
+        }
+        
+        if self.uDLists.count > 0 {
+            urbanSave = 1
+        }
+        
+        if defSave == 1 && urbanSave == 1 {
+            bothSave = 1
+        }
+        
+
+        
+        let parameters: [String: AnyObject] = [
+            "word" : wordSave,
+            "def" : defSave,
+            "urban" : urbanSave,
+            "both" : bothSave,
+        ]
+        
+  
+//        print(parameters)
+        
+        
+        
+        
+        Alamofire.request(.POST, url, headers: headers, parameters: parameters, encoding: .JSON).responseJSON { response in
+//            print(response.request)  // original URL request
+//            print(response.response) // URL response
+//            print(response.data)     // server data
+//            print(response.result)   // result of response serialization
+//            
+//            if let JSON = response.result.value {
+//                print("JSON: \(JSON)")
+//            }
+            response.result.error
+        }
+        
+        
+    }
+    
+    
+    
+    
+    
+    
     func cleanInputString(dirty: String) {
 
         // Move to the top of the table every time a new search is initiated
@@ -896,8 +969,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         
-        self.senderTextDirty = dirty
-        
+        self.senderTextDirty = dirty.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
+        self.senderTextDirty = self.condenseWhiteSpace(self.senderTextDirty)
   
         
         // Clear definition variable
@@ -1070,6 +1143,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             
 
         }
+        
+        
+        // Send API POST to mongo
+        self.sendPostAPI()
     }
     
     
