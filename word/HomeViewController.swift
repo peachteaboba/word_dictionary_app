@@ -9,7 +9,7 @@
 import UIKit
 import Alamofire
 import AVFoundation
-import AVFoundation.AVAudioSession
+//import AVFoundation.AVAudioSession
 import AudioToolbox
 
 
@@ -56,7 +56,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     // variable to save the last position visited, default to zero
-    private var lastContentOffset: CGFloat = 0
+    fileprivate var lastContentOffset: CGFloat = 0
     
     // Cache the baseline top title left constraint for each new word
     var topTitleLeftConstraint: CGFloat = 0
@@ -139,7 +139,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         // Stop the scroll movement by scrolling to the nearest row. This prevents the search bar to be hidden repeatedly during auto-scroll.
         if currentRow > 1 {
-            self.definitionTableView.scrollToNearestSelectedRowAtScrollPosition(UITableViewScrollPosition.Middle, animated: true)
+            self.definitionTableView.scrollToNearestSelectedRow(at: UITableViewScrollPosition.middle, animated: true)
         }
 
     }
@@ -152,14 +152,14 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func handleClearText() {
         
         self.searchTextField.text = ""
-        self.xButton.hidden = true
+        self.xButton.isHidden = true
         
     }
     
     // Function that executes every time the text field is altered
-    func textFieldDidChange(textField: UITextField) {
+    func textFieldDidChange(_ textField: UITextField) {
         // Do code here when the text field is altered
-        self.xButton.hidden = false
+        self.xButton.isHidden = false
     }
     
     
@@ -180,13 +180,13 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     self.soundImage.image = UIImage(named: "soundPlaying")
                 
                     // Convert normal string to NSURL String
-                    let url : NSURL = NSURL(string: self.uDSounds[0])!
+                    let url : URL = URL(string: self.uDSounds[0])!
                 
                     // Create the player item that will play the sound
-                    let playerItem = AVPlayerItem(URL: url)
+                    let playerItem = AVPlayerItem(url: url)
                 
                     // Set an listener for when the sounds is done playing
-                    NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: playerItem)
+                    NotificationCenter.default.addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: playerItem)
             
                     // Play the sound
                     self.player = AVPlayer(playerItem:playerItem)
@@ -220,7 +220,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     
-    func playerDidFinishPlaying(note: NSNotification) {
+    func playerDidFinishPlaying(_ note: Notification) {
         
         // When the sound is done playing, change the sound icon back to original
         self.soundImage.image = UIImage(named: "sound")
@@ -228,7 +228,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     
-    @IBAction func handleSearchButtonPressed(sender: UITextField) {
+    @IBAction func handleSearchButtonPressed(_ sender: UITextField) {
         
         // Set top title text for this new input word
         self.setTopTitleText(sender.text!)
@@ -246,11 +246,11 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // MARK: - NEW HOTNESS API ----------------------------------------------------------------------------------
     
-    func callNewHotness(cleanString: String) {
+    func callNewHotness(_ cleanString: String) {
 
         // Hide the rand indicator in case it's not hidden
-        if self.randomWordIndicator.hidden == false {
-            self.randomWordIndicator.hidden = true
+        if self.randomWordIndicator.isHidden == false {
+            self.randomWordIndicator.isHidden = true
         }
         
         let headers = [
@@ -270,7 +270,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             wordsURL = "https://wordsapiv1.p.mashape.com/words/?random=true"
         }
        
-        Alamofire.request(.GET, wordsURL, headers: headers).responseJSON { response in   // Words API ---------------------------------------
+        Alamofire.request(wordsURL, method: .get, parameters: nil, headers: headers).responseJSON { response in   // Words API ---------------------------------------
             
             if let responseArray = response.result.value as? NSDictionary {
 
@@ -282,12 +282,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                         self.setTopTitleText(randomWord)
 
                         // Show random word indicator
-                        self.randomWordIndicator.hidden = false
+                        self.randomWordIndicator.isHidden = false
                         
                         self.topHeaderLabel.textColor = self.UIColorFromRGB(0x333333)
                         let wikiRand = self.removeSpecialCharsFromString(randomWord)
                         self.senderTextDirty = wikiRand
-                        self.senderText = wikiRand.stringByReplacingOccurrencesOfString(" ", withString: "")
+                        self.senderText = wikiRand.replacingOccurrences(of: " ", with: "")
                     } else {
                         print("404")
                         self.topHeaderLabel.text = "404"
@@ -300,7 +300,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 } // End If Random Word ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                 self.random = 0
 
-                if let results = responseArray["results"] as? NSArray {
+                if let results = responseArray["results"] as? [NSDictionary] {
                     
                     for dic in results {
                         
@@ -327,12 +327,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
                         // Clean HTML strings
                         if definitionSave != "" {
-                            definitionSave = definitionSave.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
+                            definitionSave = definitionSave.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression, range: nil)
                             definitionSave = self.removeSpecialCharsFromStringWiki(definitionSave)
                         }
                         
                         if exampleSave != "" {
-                            exampleSave = exampleSave.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
+                            exampleSave = exampleSave.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression, range: nil)
                             exampleSave = self.removeSpecialCharsFromStringWiki(exampleSave)
                         }
                         
@@ -347,10 +347,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     
                     // Update UI
                     self.definitionTableView.reloadData()
-                    self.wikipediaAPI()
+                    self.callUrbanDictionaryAPI()
                 } else {
                     self.definitionTableView.reloadData()
-                    self.wikipediaAPI()
+                    self.callUrbanDictionaryAPI()
                 }
             } else {
                 
@@ -368,110 +368,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 }
                 
                 self.definitionTableView.reloadData()
-                self.wikipediaAPI()
+                self.callUrbanDictionaryAPI()
             }
         } // END Words API ----------------------------------
     }
     
     
-    func wikipediaAPI() { // WORDNIK API ------------------------------------------------------------------------------
-        
-        // Clean the string
-        let cleanString = self.removeSpecialCharsFromString(self.senderTextDirty)
-        
-        // Replace empty spaces with %20
-        let modifiedString = cleanString.stringByReplacingOccurrencesOfString(" ", withString: "%20")
-   
-        let wikipediaURL = "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&exintro=&titles=\(modifiedString)"
-        
-        Alamofire.request(.GET, wikipediaURL).responseJSON { response in
-            
-            if let responseArray = response.result.value as? NSDictionary {
-                
-                if let data = responseArray["query"] {
-                    if let pages = data["pages"] {
-                        if let extract = pages!.allValues[0]["extract"] as? String {
-                            
-                            // Clean HTML string
-                            var extractStr = extract.stringByReplacingOccurrencesOfString("<[^>]+>", withString: "", options: .RegularExpressionSearch, range: nil)
-                            extractStr = self.removeSpecialCharsFromStringWiki(extractStr)
-
-                            // Don't display wiki extract if if gives you that From other cap nonsense..
-                            var sampleString = extractStr as NSString
-                            
-                            // Sample the first 26 characters
-                            if extractStr.characters.count > 25 {
-                                sampleString = sampleString.substringWithRange(NSRange(location: 0, length: 26))
-                            }
-
-                            // Cache the extract in the global variable. Check if it's useful info.
-                            if extractStr.characters.count > cleanString.characters.count + 15  && sampleString != "From other capitalisation:" {
-
-                                // If the extract starts with "?? may refer to:" Remove that part :::::::::::::::::::::::::::::::::::::
-                                var capitalizedString = cleanString
-                                
-                                // Capitalizing first letter only
-                                capitalizedString = String(capitalizedString.characters.first!).capitalizedString + String(capitalizedString.characters.dropFirst())
-                                
-                                // Removing front and back whitespace
-                                capitalizedString = capitalizedString.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-                                
-                                sampleString = extractStr as NSString
-                                sampleString = sampleString.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 14))
-                                
-                                // test word: Norristown <-- removes the "?? may mean:" from beginning of extract
-                                var sampleString2 = extractStr as NSString
-                                sampleString2 = sampleString2.substringWithRange(NSRange(location: 0, length: capitalizedString.characters.count + 10))
-                                
-                                if sampleString == "\(capitalizedString) may refer to:" {
-                                    // Remove the front part
-                                    sampleString = extractStr as NSString
-                                    sampleString = sampleString.substringWithRange(NSRange(location: capitalizedString.characters.count + 14, length: extractStr.characters.count - (capitalizedString.characters.count + 14)))
-                                    extractStr = sampleString as String
-                                } else if sampleString2 == "\(capitalizedString) may mean:" {
-                                    // Remove the front part
-                                    sampleString2 = extractStr as NSString
-                                    sampleString2 = sampleString2.substringWithRange(NSRange(location: capitalizedString.characters.count + 10, length: extractStr.characters.count - (capitalizedString.characters.count + 10)))
-                                    extractStr = sampleString2 as String
-                                }
-                                // End remove "?? may refer to:" ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-                                
-                                self.wikiExtract = extractStr
-                            }
-
-                            // Update UI
-                            self.definitionTableView.reloadData()
-                            self.callUrbanDictionaryAPI()
-                            
-                        } else {
-                            // Update UI
-                            self.definitionTableView.reloadData()
-                            self.callUrbanDictionaryAPI()
-                        }
-                    } else {
-                        // Update UI
-                        self.definitionTableView.reloadData()
-                        self.callUrbanDictionaryAPI()
-                    }
-                } else {
-                    // Update UI
-                    self.definitionTableView.reloadData()
-                    self.callUrbanDictionaryAPI()
-                }
-            } else {
-                print("no mas")
-                // Update UI
-                self.definitionTableView.reloadData()
-                self.callUrbanDictionaryAPI()
-            }
-            
-            
-        }
-    } // END WIKIPEDIA API ------------------------------------------------------------------------------
-    
-    
-    
-
     
     func callUrbanDictionaryAPI() {
         // URBAN DICTIONARY API ------------------------------------------------------------------------------
@@ -479,10 +381,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         let cleanString = self.senderText
         let urbanDictionaryURL = "http://api.urbandictionary.com/v0/define?term=\(cleanString)"
         
-        Alamofire.request(.GET, urbanDictionaryURL)
+        Alamofire.request(urbanDictionaryURL, method: .get, parameters: nil, headers: nil)
             .responseJSON { response in
                 
-                if let res = response.result.value {
+                if let res = response.result.value as? NSDictionary{
 
                     // TAGS
                     if let tags = res["tags"] as? NSArray {
@@ -498,7 +400,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                         for val in sounds {
                             self.uDSounds.append(val as! String)
                             // If there are sounds, then show the sound image.
-                            self.soundImage.hidden = false
+                            self.soundImage.isHidden = false
                             self.refreshTopTitleConstraint()
                         }
                     } else {
@@ -506,7 +408,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     }
                     
                     // LIST
-                    if let lists = res["list"] as? NSArray {
+                    if let lists = res["list"] as? [NSDictionary] {
                         for obj in lists {
                             
                             var defid = 0
@@ -551,7 +453,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                         
                         // Sort according to score
                         if self.uDLists.count > 1 {
-                            self.uDLists.sortInPlace { $0.score > $1.score }
+                            self.uDLists.sort { $0.score > $1.score }
                         }
 
                     } else {
@@ -577,7 +479,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     func synonymsAPI() {
         let headers = ["X-Mashape-Key": "MHOVySweXOmsh65XEw8g4ZIbCooup10TJsMjsnK8rElAjjA3JJ"]
         let wordsURL = "https://wordsapiv1.p.mashape.com/words/\(self.senderText)/synonyms"
-        Alamofire.request(.GET, wordsURL, headers: headers).responseJSON { response in
+        Alamofire.request(wordsURL, method: .get, parameters: nil, headers: headers).responseJSON { response in
             if let responseArray = response.result.value as? NSDictionary {
                 if let synArray = responseArray["synonyms"] as? NSArray {
                     self.synonymsArray = synArray as! Array // <----------------------------------------- SAVING SYNONYMS HERE!
@@ -608,12 +510,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         // Remove special characters from url string and replace spaces with plus.
         var trimmedString = self.removeSpecialCharsFromString(self.senderTextDirty)
-        trimmedString = trimmedString.stringByReplacingOccurrencesOfString(" ", withString: "+")
+        trimmedString = trimmedString.replacingOccurrences(of: " ", with: "+")
         
         let headers = ["X-Mashape-Key": "MHOVySweXOmsh65XEw8g4ZIbCooup10TJsMjsnK8rElAjjA3JJ"]
         let wordsURL = "https://montanaflynn-spellcheck.p.mashape.com/check/?text=\(trimmedString)"
         
-        Alamofire.request(.GET, wordsURL, headers: headers).responseJSON { response in
+        Alamofire.request(wordsURL, method: .get, parameters: nil, headers: headers).responseJSON { response in
             if let responseArray = response.result.value as? NSDictionary {
                 
                 if let corrections = responseArray["corrections"] as? NSDictionary {
@@ -621,7 +523,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     for (_, value) in corrections {
                         
                         // If there are suggestion words, save them.
-                        var suggestions = []
+                        var suggestions = [] as Array
                         if let valueArr = value as? NSArray {
                             suggestions = valueArr as Array
                         }
@@ -634,19 +536,24 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                                 var compareString = trimmedString
                                     
                                 // Make all characters lower case
-                                notSoDirtyWord = notSoDirtyWord.lowercaseString
-                                compareString = compareString.lowercaseString
-                                    
+                                notSoDirtyWord = notSoDirtyWord.lowercased()
+                                compareString = compareString.lowercased()
+                                
                                 // Remove all special characters from string
                                 notSoDirtyWord = self.removeSpecialCharsFromString(notSoDirtyWord)
                                     
                                 // Remove Spaces
-                                notSoDirtyWord = notSoDirtyWord.stringByReplacingOccurrencesOfString(" ", withString: "")
+//                                notSoDirtyWord = notSoDirtyWord.stringByReplacingOccurrencesOfString(" ", withString: "")
+                                
+                                // Swift 3.0 version
+                                notSoDirtyWord = notSoDirtyWord.trimmingCharacters(in: .whitespaces)
+                                
+                                
                                     
                                 // Only add to the array if the word is different
                                 if notSoDirtyWord != compareString {
                                     if var saveWord = dirtyWord as? String {
-                                        saveWord = saveWord.lowercaseString
+                                        saveWord = saveWord.lowercased()
                                         self.simSpelledArray.append(saveWord)
                                     }
                                 }
@@ -760,18 +667,18 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         // Top header left constraint
-        self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2)
+        self.topHeaderLeftConstraint.constant = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize.width / 2)
         
         
         // Table view styles
         self.definitionTableView.contentInset = UIEdgeInsetsMake(11, 0, 200, 0);
    
         // Hide sound image amoung other things on first load
-        self.soundImage.hidden = true
-        self.xButton.hidden = true
+        self.soundImage.isHidden = true
+        self.xButton.isHidden = true
         self.searchIconDark.alpha = 1
         self.searchIcon.alpha = 0
-        self.randomWordIndicator.hidden = true
+        self.randomWordIndicator.isHidden = true
         
         
         
@@ -794,7 +701,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         // Search field styles
         self.searchTextField.backgroundColor = UIColorFromRGB(0xf2f4f9)
         self.searchTextField.layer.cornerRadius = 8
-        self.searchTextField.returnKeyType = UIReturnKeyType.Search
+        self.searchTextField.returnKeyType = UIReturnKeyType.search
         self.searchTextField.layer.sublayerTransform = CATransform3DMakeTranslation(20, 2, 0)
         self.searchTextField.becomeFirstResponder()
         
@@ -811,29 +718,29 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         // Add guesture action to search icon
         let searchIconTap = UITapGestureRecognizer(target: self, action: #selector(self.handleSearchIconTap))
-        self.searchIconTapZone.userInteractionEnabled = true
+        self.searchIconTapZone.isUserInteractionEnabled = true
         self.searchIconTapZone.addGestureRecognizer(searchIconTap)
         
         
         // Add guesture action to Top Header Label
         let playSound = UITapGestureRecognizer(target: self, action: #selector(self.handleTopTitleLabelTap))
-        self.topHeaderLabel.userInteractionEnabled = true
+        self.topHeaderLabel.isUserInteractionEnabled = true
         self.topHeaderLabel.addGestureRecognizer(playSound)
         
         // Add guesture action to X Button
         let clearText = UITapGestureRecognizer(target: self, action: #selector(self.handleClearText))
-        self.xButton.userInteractionEnabled = true
+        self.xButton.isUserInteractionEnabled = true
         self.xButton.addGestureRecognizer(clearText)
 
         // Add gesture to text field to sense text change
-        self.searchTextField.addTarget(self, action: #selector(self.textFieldDidChange(_:)), forControlEvents: UIControlEvents.EditingChanged)
+        self.searchTextField.addTarget(self, action: #selector(self.textFieldDidChange(_:)), for: UIControlEvents.editingChanged)
 
         
         
         
         // Add guesture action to TOP RIGHT TAP ZONE
         let randomIconTap = UITapGestureRecognizer(target: self, action: #selector(self.handleRandomIconTap))
-        self.topRightTapZone.userInteractionEnabled = true
+        self.topRightTapZone.isUserInteractionEnabled = true
         self.topRightTapZone.addGestureRecognizer(randomIconTap)
 
         
@@ -842,7 +749,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
     }
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
         self.linkViewBottomConstraint.constant = -400
@@ -857,13 +764,13 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
 
     // Allows shake gesture to be recognized
-    override func canBecomeFirstResponder() -> Bool {
+    override var canBecomeFirstResponder : Bool {
         return true
     }
     
     // Function that executes after shake is detected
-    override func motionEnded(motion: UIEventSubtype, withEvent event: UIEvent?) {
-        if(event!.subtype == UIEventSubtype.MotionShake) {
+    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
+        if(event!.subtype == UIEventSubtype.motionShake) {
             //            print("You shook me, now what")
             handleRandTap()
         }
@@ -879,9 +786,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // MARK: - Helper Functions ------------------------------------------------------------
     
-    func condenseWhiteSpace(word: String) -> String {
-        let components = word.componentsSeparatedByCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-        return components.filter { !$0.isEmpty }.joinWithSeparator(" ")
+    func condenseWhiteSpace(_ word: String) -> String {
+        let components = word.components(separatedBy: CharacterSet.whitespacesAndNewlines)
+        return components.filter { !$0.isEmpty }.joined(separator: " ")
     }
     
     
@@ -892,7 +799,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         let url = "http://www.worddapp.com/wordSearched"
         
         var wordSave = self.removeSpecialCharsFromString(self.senderTextDirty)
-        wordSave = wordSave.lowercaseString
+        wordSave = wordSave.lowercased()
         
         var defSave = 0
         var urbanSave = 0
@@ -913,10 +820,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
         
         let parameters: [String: AnyObject] = [
-            "word" : wordSave,
-            "def" : defSave,
-            "urban" : urbanSave,
-            "both" : bothSave,
+            "word" : wordSave as AnyObject,
+            "def" : defSave as AnyObject,
+            "urban" : urbanSave as AnyObject,
+            "both" : bothSave as AnyObject,
         ]
         
   
@@ -925,16 +832,21 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         
-        Alamofire.request(.POST, url, headers: headers, parameters: parameters, encoding: .JSON).responseJSON { response in
-//            print(response.request)  // original URL request
-//            print(response.response) // URL response
-//            print(response.data)     // server data
-//            print(response.result)   // result of response serialization
-//            
-//            if let JSON = response.result.value {
-//                print("JSON: \(JSON)")
+        Alamofire.request(url, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers).responseJSON { response in
+            
+//            switch(response.result) {
+//            case .success(_):
+//                if let data = response.result.value{
+//                    print(data)
+//                }
+//                break
+//                
+//            case .failure(_):
+//                print(response.result.error)
+//                break
+//                
 //            }
-            response.result.error
+            
         }
         
         
@@ -945,10 +857,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     
-    func cleanInputString(dirty: String) {
+    func cleanInputString(_ dirty: String) {
 
         // Move to the top of the table every time a new search is initiated
-        self.definitionTableView.contentOffset = CGPointMake(0, 0 - self.definitionTableView.contentInset.top);
+        self.definitionTableView.contentOffset = CGPoint(x: 0, y: 0 - self.definitionTableView.contentInset.top);
         
         
         
@@ -969,7 +881,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         
-        self.senderTextDirty = dirty.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
+        self.senderTextDirty = dirty.trimmingCharacters(in: CharacterSet.whitespaces)
         self.senderTextDirty = self.condenseWhiteSpace(self.senderTextDirty)
   
         
@@ -978,9 +890,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.uDTags = [String]()
         self.uDSounds = [String]()
         self.uDLists = [uDList]()
-        self.promptLabel.hidden = false
+        self.promptLabel.isHidden = false
         self.promptLabel.text = "Searching..."
-        self.shakeForRandView.hidden = true
+        self.shakeForRandView.isHidden = true
         
         
         self.totalRows = 0
@@ -1010,10 +922,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         
         // Hide sound image on new api call
-        self.soundImage.hidden = true
+        self.soundImage.isHidden = true
         
         // Remove spaces from input and create the URL string.
-        var trimmedString = dirty.stringByReplacingOccurrencesOfString(" ", withString: "")
+        var trimmedString = dirty.replacingOccurrences(of: " ", with: "")
         
         
         
@@ -1049,23 +961,28 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     }
     
     // Default speech synthesizer (siri voice)
-    func talkToMe(wordToSay: String) {
+    func talkToMe(_ wordToSay: String) {
+        
+//        print("talking..")
+        
+        
+        
         
         let synthesizer = AVSpeechSynthesizer()
         let utterance = AVSpeechUtterance(string: wordToSay)
         utterance.rate = 0.5
         
-        synthesizer.speakUtterance(utterance)
+        synthesizer.speak(utterance)
         
     }
     
     
-    func setTopTitleText(word: String) {
+    func setTopTitleText(_ word: String) {
         var wordToDisplay = word
         
         if word.characters.count > 25 {
             while wordToDisplay.characters.count > 15 {
-                wordToDisplay.removeAtIndex(wordToDisplay.endIndex.predecessor())
+                wordToDisplay.remove(at: wordToDisplay.characters.index(before: wordToDisplay.endIndex))
             }
             wordToDisplay += ".."
         }
@@ -1074,7 +991,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         self.senderText = word
         
         // Cache the title lebel left constraint for future use
-        self.topTitleLeftConstraint = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize().width / 2) + 2
+        self.topTitleLeftConstraint = (self.view.frame.width / 2) - (self.topHeaderLabel.intrinsicContentSize.width / 2) + 2
         
         // Update the title label left constraint
         self.topHeaderLeftConstraint.constant = self.topTitleLeftConstraint
@@ -1089,7 +1006,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         
         // Code to start animation
         self.view.setNeedsLayout()
-        UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.allowUserInteraction], animations: {
             self.view.layoutIfNeeded()
         }) { (finished) in
             if finished {
@@ -1101,13 +1018,13 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     
-    func removeSpecialCharsFromString(text: String) -> String {
+    func removeSpecialCharsFromString(_ text: String) -> String {
         let okayChars : Set<Character> =
             Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ1234567890 ".characters)
         return String(text.characters.filter {okayChars.contains($0) })
     }
     
-    func removeSpecialCharsFromStringWiki(text: String) -> String {
+    func removeSpecialCharsFromStringWiki(_ text: String) -> String {
         let okayChars : Set<Character> =
             Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ1234567890 ,.?!'<>=@/~#$%^&*()-+:;{}[]|`".characters)
         return String(text.characters.filter {okayChars.contains($0) })
@@ -1116,7 +1033,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     func updatePrompt() {
         
-        self.promptLabel.hidden = true
+        self.promptLabel.isHidden = true
         
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 0 {
 
@@ -1153,7 +1070,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     // Helper function to set colors with Hex values
-    func UIColorFromRGB(rgbValue: UInt) -> UIColor {
+    func UIColorFromRGB(_ rgbValue: UInt) -> UIColor {
         return UIColor(
             red: CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0,
             green: CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0,
@@ -1187,8 +1104,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             self.searchTextField.alpha = 0
                 
             // If the x button is not hidden, hide it.
-            if self.xButton.hidden == false {
-                self.xButton.hidden = true
+            if self.xButton.isHidden == false {
+                self.xButton.isHidden = true
             }
 
             self.topViewHeightConstraint.constant = 75
@@ -1218,7 +1135,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
         // Code to start animation
         self.view.setNeedsLayout()
-        UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0.7, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0.7, options: [UIViewAnimationOptions.allowUserInteraction], animations: {
             self.view.layoutIfNeeded()
         }) { (finished) in
             if finished {
@@ -1246,12 +1163,12 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     // MARK: - Table View Prototype Functions ------------------------------------------------------------
    
     
-    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
 
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
             
             
-            if indexPath.row == 0 {
+            if (indexPath as NSIndexPath).row == 0 {
                 return 200
             } else {
                 return UITableViewAutomaticDimension
@@ -1270,7 +1187,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     // How many cells are we going to need?
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
             // No results found. Show similarly spelled words.
@@ -1322,15 +1239,15 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     // When the user clicks on a table view cell
-    func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
 //        print("touched")
         
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
             
             // Check to see if the user clicked a similarly spelled word (not the top prompt)
-            if self.simSpelledArray.count > 0 && indexPath.row > 0 {
-                let index = indexPath.row - 1
+            if self.simSpelledArray.count > 0 && (indexPath as NSIndexPath).row > 0 {
+                let index = (indexPath as NSIndexPath).row - 1
                 
                 if index < self.simSpelledArray.count {
                   
@@ -1350,9 +1267,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         } else if self.showSynonymPrompt == 1 && self.synonymsArray.count > 0 {
             
             // Check to see if the user clicked on a row with a synonym word
-            if indexPath.row > self.totalRows - self.synonymsArray.count {
+            if (indexPath as NSIndexPath).row > self.totalRows - self.synonymsArray.count {
               
-                let index = indexPath.row - self.definitions.count - self.hasWiki - self.uDLists.count - 1
+                let index = (indexPath as NSIndexPath).row - self.definitions.count - self.hasWiki - self.uDLists.count - 1
                 
                 if index < self.synonymsArray.count {
                     self.searchFromRedirect = 1 // This hides the keyboard and search bar if it's not already hidden
@@ -1385,18 +1302,18 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     
     // How should I create each cell?
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        self.currentRow = indexPath.row // Used for scrolling feature
+        self.currentRow = (indexPath as NSIndexPath).row // Used for scrolling feature
         
         // This is the rare case that no info is found on the given word
         if self.definitions.count + self.uDLists.count == 0 && self.wikiExtract == "" && self.showSimPrompt == 1 {
             
 
-            if indexPath.row == 0 {
+            if (indexPath as NSIndexPath).row == 0 {
                 
                 // Title cell for the similar words list
-                let cell = tableView.dequeueReusableCellWithIdentifier("spellingTitleCell") as! CustomSpellingTitleCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "spellingTitleCell") as! CustomSpellingTitleCell
                 
                 // Custom Cell Styling
                 cell.titleLabel.textColor = UIColorFromRGB(0x0c743e)
@@ -1427,9 +1344,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             } else {
                 
                 // Word cell for the similar words list
-                let cell = tableView.dequeueReusableCellWithIdentifier("spellingCell") as! CustomSpellingCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "spellingCell") as! CustomSpellingCell
                 
-                let index = indexPath.row - 1
+                let index = (indexPath as NSIndexPath).row - 1
                 
                 // Set table data
                 if index < self.simSpelledArray.count {
@@ -1441,7 +1358,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 // Set styling
                 cell.wrapperView.layer.cornerRadius = cell.wrapperView.frame.height / 2
-                cell.wrapperView.backgroundColor = UIColor.whiteColor()
+                cell.wrapperView.backgroundColor = UIColor.white
                 
                 // Set dynamic cell height
                 self.definitionTableView.estimatedRowHeight = 80
@@ -1466,16 +1383,16 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             // Info is found. Display the info in various cells.
             
             
-            if indexPath.row < self.definitions.count {
+            if (indexPath as NSIndexPath).row < self.definitions.count {
                 
                 // Create cell
-                let cell = tableView.dequeueReusableCellWithIdentifier("myCell") as! CustomDefinitionCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "myCell") as! CustomDefinitionCell
                 
                 // Set table data (use extra safeguards so index is never out of range)
-                if indexPath.row <= (self.definitions.count - 1) {
-                    cell.typeLabel.text = self.definitions[indexPath.row].type
-                    cell.definitionLabel.text = self.definitions[indexPath.row].definition
-                    cell.exampleLabel.text = self.definitions[indexPath.row].example
+                if (indexPath as NSIndexPath).row <= (self.definitions.count - 1) {
+                    cell.typeLabel.text = self.definitions[(indexPath as NSIndexPath).row].type
+                    cell.definitionLabel.text = self.definitions[(indexPath as NSIndexPath).row].definition
+                    cell.exampleLabel.text = self.definitions[(indexPath as NSIndexPath).row].example
                 } else {
                     print("error ------> index out of range <------ WordAPI cell")
                     cell.typeLabel.text = "404"
@@ -1488,9 +1405,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 cell.exampleLabel.textColor = UIColorFromRGB(0x00c860)
                 
                 // Hide sections that have no data
-                cell.staticExampleLabel.hidden = false // Revert to default settings
+                cell.staticExampleLabel.isHidden = false // Revert to default settings
                 if cell.exampleLabel.text == "" {
-                    cell.staticExampleLabel.hidden = true
+                    cell.staticExampleLabel.isHidden = true
                 }
                 
                 // Change type text color based on type
@@ -1513,10 +1430,10 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 return cell
                 
-            } else if self.wikiExtract != "" && indexPath.row == self.definitions.count {
+            } else if self.wikiExtract != "" && (indexPath as NSIndexPath).row == self.definitions.count {
                 
                 // Wikipedia Extract Prototype Cells
-                let cell = tableView.dequeueReusableCellWithIdentifier("wikiCell") as! CustomWikiCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "wikiCell") as! CustomWikiCell
                 
                 // Set custom table cell data
                 cell.extractLabel.text = self.wikiExtract
@@ -1530,24 +1447,24 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 return cell
                 
-            } else if indexPath.row > self.definitions.count + self.hasWiki - 1 && indexPath.row < self.totalRows - self.synonymsArray.count {
+            } else if (indexPath as NSIndexPath).row > self.definitions.count + self.hasWiki - 1 && (indexPath as NSIndexPath).row < self.totalRows - self.synonymsArray.count {
                 
                 // Urban Dictionary Prototype Cells
-                let cell = tableView.dequeueReusableCellWithIdentifier("urbanCell") as! CustomUrbanCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "urbanCell") as! CustomUrbanCell
                 
                 // Calculate the corresponding index/row for uDLists
                 var index = -1
                 if self.wikiExtract == "" {
                     if self.definitions.count > 0 {
-                        index = indexPath.row - self.definitions.count
+                        index = (indexPath as NSIndexPath).row - self.definitions.count
                     } else {
-                        index = indexPath.row
+                        index = (indexPath as NSIndexPath).row
                     }
                 } else if self.wikiExtract != "" {
                     if self.definitions.count > 0 {
-                        index = indexPath.row - (self.definitions.count + 1)
+                        index = (indexPath as NSIndexPath).row - (self.definitions.count + 1)
                     } else {
-                        index = indexPath.row - 1
+                        index = (indexPath as NSIndexPath).row - 1
                     }
                 }
                 
@@ -1593,9 +1510,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 
                 
-            } else if indexPath.row == self.totalRows - self.synonymsArray.count {
+            } else if (indexPath as NSIndexPath).row == self.totalRows - self.synonymsArray.count {
                 // Synonyms title cell
-                let cell = tableView.dequeueReusableCellWithIdentifier("synonymTitleCell") as! CustomSynonymTitleCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "synonymTitleCell") as! CustomSynonymTitleCell
                 
                 
                 // Set table data
@@ -1620,9 +1537,9 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             } else {
             
                 // Word cell for the synonym words list
-                let cell = tableView.dequeueReusableCellWithIdentifier("spellingCell") as! CustomSpellingCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: "spellingCell") as! CustomSpellingCell
                 
-                let index = indexPath.row - self.definitions.count - self.hasWiki - self.uDLists.count - 1
+                let index = (indexPath as NSIndexPath).row - self.definitions.count - self.hasWiki - self.uDLists.count - 1
 
                 // Set table data
                 if index < self.synonymsArray.count {
@@ -1634,7 +1551,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                 
                 // Set styling
                 cell.wrapperView.layer.cornerRadius = cell.wrapperView.frame.height / 2
-                cell.wrapperView.backgroundColor = UIColor.whiteColor()
+                cell.wrapperView.backgroundColor = UIColor.white
                 
                 // Set dynamic cell height
                 self.definitionTableView.estimatedRowHeight = 80
@@ -1665,7 +1582,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
     
     // MARK: - Detect SCROLL function -------------------------------------------------------------------------
     
-    func scrollViewDidScroll(scrollView: UIScrollView) {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
         if (self.lastContentOffset > scrollView.contentOffset.y && self.isFirstLoad != 1) {
  
             // If the view is scrolled all the way up and the user is still scrolling up. Bring down the search field.
@@ -1690,7 +1607,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
 
                 // Code to start animation
                 self.view.setNeedsLayout()
-                UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
+                UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.allowUserInteraction], animations: {
                     self.view.layoutIfNeeded()
                 }) { (finished) in
                     if finished {
@@ -1713,8 +1630,8 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     self.searchTextField.alpha = 0
                     
                     // If the x button is not hidden, hide it.
-                    if self.xButton.hidden == false {
-                        self.xButton.hidden = true
+                    if self.xButton.isHidden == false {
+                        self.xButton.isHidden = true
                     }
                     
                     self.topViewHeightConstraint.constant = 75
@@ -1732,7 +1649,7 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
                     
                     // Code to start animation
                     self.view.setNeedsLayout()
-                    UIView.animateWithDuration(0.5, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.AllowUserInteraction], animations: {
+                    UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.2, options: [UIViewAnimationOptions.allowUserInteraction], animations: {
                         self.view.layoutIfNeeded()
                     }) { (finished) in
                         if finished {
